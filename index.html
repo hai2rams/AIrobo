@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="A deterministic 2D robot playground powered by the AIrobo simulation kernel."
+    />
+    <title>AIrobo Visual Playground</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="app-header">
+        <div>
+          <p class="eyebrow">M2 · Simulation workspace</p>
+          <h1>Visual Playground</h1>
+          <p class="subtitle">Guide one robot through a deterministic 2D world.</p>
+        </div>
+        <div class="status-badge"><span></span> Kernel ready</div>
+      </header>
+
+      <section class="workspace" aria-label="Robot visual playground">
+        <div class="playground-column">
+          <div class="world-frame">
+            <div id="world" class="world" aria-label="600 by 400 robot world">
+              <div id="target" class="target" aria-label="Target at x 500, y 200">
+                <span class="target-ring"></span>
+                <span class="target-core"></span>
+              </div>
+              <div id="robot" class="robot" aria-label="Robot">
+                <span class="robot-body"></span>
+                <span class="robot-heading"></span>
+              </div>
+            </div>
+          </div>
+
+          <div class="controls" aria-label="Robot controls">
+            <button type="button" data-control="TURN_LEFT" aria-label="Turn left 15 degrees">
+              <span aria-hidden="true">↶</span> Turn Left
+            </button>
+            <button type="button" data-control="MOVE_FORWARD" class="primary">
+              <span aria-hidden="true">↑</span> Move Forward
+            </button>
+            <button type="button" data-control="TURN_RIGHT" aria-label="Turn right 15 degrees">
+              <span aria-hidden="true">↷</span> Turn Right
+            </button>
+            <button type="button" data-control="RESET" class="reset">
+              <span aria-hidden="true">↺</span> Reset
+            </button>
+          </div>
+        </div>
+
+        <aside class="side-panel">
+          <section class="panel" aria-labelledby="state-title">
+            <div class="panel-heading">
+              <div>
+                <p class="panel-kicker">Live telemetry</p>
+                <h2 id="state-title">Robot State</h2>
+              </div>
+              <span class="live-dot" aria-label="Live"></span>
+            </div>
+            <dl class="state-grid" aria-live="polite">
+              <div><dt>x</dt><dd id="state-x">100</dd></div>
+              <div><dt>y</dt><dd id="state-y">200</dd></div>
+              <div><dt>heading</dt><dd id="state-heading">0°</dd></div>
+              <div><dt>speed</dt><dd id="state-speed">0</dd></div>
+              <div><dt>step</dt><dd id="state-step">0</dd></div>
+              <div><dt>time</dt><dd id="state-time">0</dd></div>
+            </dl>
+          </section>
+
+          <section class="panel event-panel" aria-labelledby="events-title">
+            <div class="panel-heading">
+              <div>
+                <p class="panel-kicker">Kernel output</p>
+                <h2 id="events-title">Event Log</h2>
+              </div>
+              <span id="event-count" class="count">0</span>
+            </div>
+            <ol id="event-log" class="event-log" aria-live="polite">
+              <li class="empty-log">No events yet. Move the robot to begin.</li>
+            </ol>
+          </section>
+        </aside>
+      </section>
+    </main>
+
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>
