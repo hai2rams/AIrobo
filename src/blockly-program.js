@@ -7,6 +7,7 @@ export const BLOCK_TYPES = Object.freeze({
   TURN_RIGHT: 'turn_right',
   FRONT_DISTANCE: 'front_distance',
   IF_ELSE: 'if_else',
+  REPEAT: 'repeat_times',
   LOGIC_COMPARE: 'logic_compare',
   NUMBER: 'math_number',
 });
@@ -26,6 +27,15 @@ export class ProgramAlreadyRunningError extends Error {
 }
 
 export const DEFAULT_ACTION_DELAY_MS = 500;
+export const MAX_REPEAT_COUNT = 100;
+export const MAX_EXECUTION_STEPS = 500;
+
+export class ProgramExecutionError extends ProgramCompileError {
+  constructor(message) {
+    super(message);
+    this.name = 'ProgramExecutionError';
+  }
+}
 
 export function actionFromBlock(block) {
   switch (block.type) {
@@ -60,7 +70,7 @@ export function compileWorkspaceSteps(workspace) {
   const program = compileWorkspaceProgram(workspace);
 
   if (program.some((node) => node.kind !== 'ACTION')) {
-    throw new ProgramCompileError('Conditional programs must execute through the program runner.');
+    throw new ProgramCompileError('Programs with control flow must execute through the program runner.');
   }
 
   return program.map(({ block, action }) => ({ block, action }));
@@ -80,6 +90,7 @@ export function compileWorkspaceProgram(workspace) {
 
 export function createBlocklyProgramController(workspace, playground) {
   let running = false;
+  let executionGeneration = 0;
 
   function assertNotRunning() {
     if (running) {
@@ -96,12 +107,20 @@ export function createBlocklyProgramController(workspace, playground) {
       assertNotRunning();
       const program = compileWorkspaceProgram(workspace);
       const actions = [];
+      const generation = ++executionGeneration;
+      const context = createExecutionContext(
+        playground,
+        actions,
+        () => generation === executionGeneration,
+      );
+      running = true;
       playground.beginAttempt?.();
 
       try {
-        executeProgram(program, playground, actions);
+        executeProgram(program, context);
       } finally {
         playground.completeAttempt?.();
+        running = false;
       }
 
       return {
@@ -115,24 +134,31 @@ export function createBlocklyProgramController(workspace, playground) {
       wait = delay,
       onStep = () => {},
       onSensor = () => {},
+      onLoop = () => {},
     } = {}) {
       assertNotRunning();
       const program = compileWorkspaceProgram(workspace);
+      const generation = ++executionGeneration;
       running = true;
       playground.beginAttempt?.();
       let state = playground.getState();
       const actions = [];
-      const fixedTotal = containsCondition(program) ? null : countActions(program);
+      const fixedTotal = containsControlFlow(program) ? null : countActions(program);
 
       try {
         state = await executeProgramSequentially(program, {
+          ...createExecutionContext(
+            playground,
+            actions,
+            () => generation === executionGeneration,
+          ),
           playground,
           workspace,
-          actions,
           delayMs,
           wait,
           onStep,
           onSensor,
+          onLoop,
           fixedTotal,
         });
       } finally {
@@ -148,6 +174,7 @@ export function createBlocklyProgramController(workspace, playground) {
     },
 
     resetRobot() {
+      executionGeneration += 1;
       return playground.execute('RESET');
     },
 
@@ -170,6 +197,13 @@ function compileSequence(firstBlock) {
         condition: compileCondition(block.getInputTargetBlock?.('CONDITION')),
         thenBranch: compileSequence(block.getInputTargetBlock?.('DO')),
         elseBranch: compileSequence(block.getInputTargetBlock?.('ELSE')),
+      });
+    } else if (block.type === BLOCK_TYPES.REPEAT) {
+      nodes.push({
+        kind: 'REPEAT',
+        block,
+        count: readRepeatCount(block),
+        body: compileSequence(block.getInputTargetBlock?.('BODY')),
       });
     } else {
       nodes.push({ kind: 'ACTION', block, action: actionFromBlock(block) });
@@ -222,18 +256,30 @@ function compileNumberExpression(block) {
   throw new ProgramCompileError(`Unsupported comparison value: ${block.type}`);
 }
 
-function executeProgram(nodes, playground, actions) {
+function executeProgram(nodes, context) {
   for (const node of nodes) {
+    context.assertActive();
+
     if (node.kind === 'ACTION') {
-      playground.executeActions([node.action]);
-      actions.push(node.action);
+      context.budget.consume('robot action');
+      context.playground.executeActions([node.action]);
+      context.actions.push(node.action);
       continue;
     }
 
-    const branch = evaluateCondition(node.condition, playground)
-      ? node.thenBranch
-      : node.elseBranch;
-    executeProgram(branch, playground, actions);
+    if (node.kind === 'IF_ELSE') {
+      context.budget.consume('IF condition');
+      const branch = evaluateCondition(node.condition, context)
+        ? node.thenBranch
+        : node.elseBranch;
+      executeProgram(branch, context);
+      continue;
+    }
+
+    for (let iteration = 1; iteration <= node.count; iteration += 1) {
+      context.budget.consume('repeat iteration');
+      executeProgram(node.body, context);
+    }
   }
 }
 
@@ -241,7 +287,10 @@ async function executeProgramSequentially(nodes, context) {
   let state = context.playground.getState();
 
   for (const node of nodes) {
+    context.assertActive();
+
     if (node.kind === 'ACTION') {
+      context.budget.consume('robot action');
       context.workspace.highlightBlock?.(node.block.id);
       state = context.playground.executeActions([node.action]);
       const index = context.actions.length;
@@ -253,25 +302,44 @@ async function executeProgramSequentially(nodes, context) {
         total: context.fixedTotal,
       });
       await context.wait(context.delayMs);
+      context.assertActive();
       continue;
     }
 
-    context.workspace.highlightBlock?.(node.block.id);
-    const conditionResult = await evaluateConditionSequentially(
-      node.condition,
-      context,
-      node.block,
-    );
-    const branch = conditionResult ? node.thenBranch : node.elseBranch;
-    state = await executeProgramSequentially(branch, context);
+    if (node.kind === 'IF_ELSE') {
+      context.budget.consume('IF condition');
+      context.workspace.highlightBlock?.(node.block.id);
+      const conditionResult = await evaluateConditionSequentially(
+        node.condition,
+        context,
+        node.block,
+      );
+      const branch = conditionResult ? node.thenBranch : node.elseBranch;
+      state = await executeProgramSequentially(branch, context);
+      continue;
+    }
+
+    for (let iteration = 1; iteration <= node.count; iteration += 1) {
+      context.assertActive();
+      context.budget.consume('repeat iteration');
+      context.workspace.highlightBlock?.(node.block.id);
+      context.onLoop(context.playground.getState(), {
+        block: node.block,
+        iteration,
+        total: node.count,
+      });
+      await context.wait(context.delayMs);
+      context.assertActive();
+      state = await executeProgramSequentially(node.body, context);
+    }
   }
 
   return state;
 }
 
-function evaluateCondition(condition, playground) {
-  const left = readNumberExpression(condition.left, playground);
-  const right = readNumberExpression(condition.right, playground);
+function evaluateCondition(condition, context) {
+  const left = readNumberExpression(condition.left, context);
+  const right = readNumberExpression(condition.right, context);
   return compareNumbers(left, condition.operator, right);
 }
 
@@ -289,12 +357,13 @@ async function evaluateConditionSequentially(condition, context, conditionBlock)
   return compareNumbers(left, condition.operator, right);
 }
 
-function readNumberExpression(expression, playground) {
+function readNumberExpression(expression, context) {
   if (expression.kind === 'NUMBER') {
     return expression.value;
   }
 
-  return readSensorResult(playground, expression.sensorType).reading.value;
+  context.budget.consume('sensor evaluation');
+  return readSensorResult(context.playground, expression.sensorType).reading.value;
 }
 
 async function readNumberExpressionSequentially(expression, context, conditionBlock) {
@@ -302,12 +371,14 @@ async function readNumberExpressionSequentially(expression, context, conditionBl
     return expression.value;
   }
 
+  context.budget.consume('sensor evaluation');
   const result = readSensorResult(context.playground, expression.sensorType);
   context.onSensor(result.state, {
     block: conditionBlock,
     reading: result.reading,
   });
   await context.wait(context.delayMs);
+  context.assertActive();
   return result.reading.value;
 }
 
@@ -350,8 +421,8 @@ function compareNumbers(left, operator, right) {
   }
 }
 
-function containsCondition(nodes) {
-  return nodes.some((node) => node.kind === 'IF_ELSE');
+function containsControlFlow(nodes) {
+  return nodes.some((node) => node.kind !== 'ACTION');
 }
 
 function countActions(nodes) {
@@ -360,6 +431,50 @@ function countActions(nodes) {
 
 function delay(milliseconds) {
   return new Promise((resolve) => setTimeout(resolve, milliseconds));
+}
+
+function readRepeatCount(block) {
+  const rawValue = block.getFieldValue('COUNT');
+  const count = Number(rawValue);
+
+  if (
+    rawValue === null
+    || rawValue === ''
+    || !Number.isFinite(count)
+    || !Number.isInteger(count)
+    || count < 0
+    || count > MAX_REPEAT_COUNT
+  ) {
+    throw new ProgramCompileError(
+      `Repeat count must be a finite integer from 0 to ${MAX_REPEAT_COUNT}.`,
+    );
+  }
+
+  return count;
+}
+
+function createExecutionContext(playground, actions, isActive) {
+  let executionSteps = 0;
+
+  return {
+    playground,
+    actions,
+    budget: {
+      consume(operation) {
+        if (executionSteps >= MAX_EXECUTION_STEPS) {
+          throw new ProgramExecutionError(
+            `Program stopped at the ${MAX_EXECUTION_STEPS}-step safety limit before ${operation}.`,
+          );
+        }
+        executionSteps += 1;
+      },
+    },
+    assertActive() {
+      if (!isActive()) {
+        throw new ProgramExecutionError('Program cancelled by Reset.');
+      }
+    },
+  };
 }
 
 function readMagnitude(block, fieldName, label) {

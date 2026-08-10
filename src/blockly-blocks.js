@@ -1,4 +1,4 @@
-import { BLOCK_TYPES } from './blockly-program.js';
+import { BLOCK_TYPES } from './blockly-program.js?v=m6-repeat-contract';
 
 export const ROBOT_TOOLBOX = Object.freeze({
   kind: 'flyoutToolbox',
@@ -7,6 +7,7 @@ export const ROBOT_TOOLBOX = Object.freeze({
     { kind: 'block', type: BLOCK_TYPES.MOVE_FORWARD },
     { kind: 'block', type: BLOCK_TYPES.TURN_LEFT },
     { kind: 'block', type: BLOCK_TYPES.TURN_RIGHT },
+    { kind: 'block', type: BLOCK_TYPES.REPEAT },
     { kind: 'block', type: BLOCK_TYPES.IF_ELSE },
     { kind: 'block', type: BLOCK_TYPES.FRONT_DISTANCE },
     {
@@ -32,33 +33,41 @@ export const ACCEPTANCE_PROGRAM = Object.freeze({
         y: 35,
         next: {
           block: {
-            type: BLOCK_TYPES.IF_ELSE,
+            type: BLOCK_TYPES.REPEAT,
+            fields: { COUNT: 4 },
             inputs: {
-              CONDITION: {
+              BODY: {
                 block: {
-                  type: BLOCK_TYPES.LOGIC_COMPARE,
-                  fields: { OP: 'LT' },
+                  type: BLOCK_TYPES.IF_ELSE,
                   inputs: {
-                    A: { block: { type: BLOCK_TYPES.FRONT_DISTANCE } },
-                    B: {
-                      shadow: {
-                        type: BLOCK_TYPES.NUMBER,
-                        fields: { NUM: 50 },
+                    CONDITION: {
+                      block: {
+                        type: BLOCK_TYPES.LOGIC_COMPARE,
+                        fields: { OP: 'LT' },
+                        inputs: {
+                          A: { block: { type: BLOCK_TYPES.FRONT_DISTANCE } },
+                          B: {
+                            shadow: {
+                              type: BLOCK_TYPES.NUMBER,
+                              fields: { NUM: 50 },
+                            },
+                          },
+                        },
+                      },
+                    },
+                    DO: {
+                      block: {
+                        type: BLOCK_TYPES.TURN_LEFT,
+                        fields: { ANGLE: 90 },
+                      },
+                    },
+                    ELSE: {
+                      block: {
+                        type: BLOCK_TYPES.MOVE_FORWARD,
+                        fields: { DISTANCE: 25 },
                       },
                     },
                   },
-                },
-              },
-              DO: {
-                block: {
-                  type: BLOCK_TYPES.TURN_LEFT,
-                  fields: { ANGLE: 90 },
-                },
-              },
-              ELSE: {
-                block: {
-                  type: BLOCK_TYPES.MOVE_FORWARD,
-                  fields: { DISTANCE: 25 },
                 },
               },
             },
@@ -126,6 +135,28 @@ export function registerRobotBlocks(Blockly) {
       nextStatement: null,
       colour: 15,
       tooltip: 'Turn clockwise by the entered angle.',
+    },
+    {
+      type: BLOCK_TYPES.REPEAT,
+      message0: 'repeat %1 times',
+      args0: [
+        {
+          type: 'field_number',
+          name: 'COUNT',
+          value: 4,
+        },
+      ],
+      message1: 'do %1',
+      args1: [
+        {
+          type: 'input_statement',
+          name: 'BODY',
+        },
+      ],
+      previousStatement: null,
+      nextStatement: null,
+      colour: 120,
+      tooltip: 'Repeat the enclosed commands a finite number of times.',
     },
     {
       type: BLOCK_TYPES.FRONT_DISTANCE,

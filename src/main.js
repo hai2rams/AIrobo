@@ -6,11 +6,11 @@ import {
 import { createMissionRuntime } from './mission-runtime.js';
 import { REACH_TARGET_MISSION } from './reach-target-mission.js';
 import { createSensorRuntime } from './sensor-runtime.js?v=m5-spec-contract';
-import { createBlocklyWorkspace } from './blockly-blocks.js';
+import { createBlocklyWorkspace } from './blockly-blocks.js?v=m6-repeat-contract';
 import {
   createBlocklyProgramController,
   ProgramCompileError,
-} from './blockly-program.js?v=m5-spec-contract';
+} from './blockly-program.js?v=m6-repeat-contract';
 
 const simulationPlayground = createPlayground();
 const missionPlayground = createMissionRuntime(REACH_TARGET_MISSION, simulationPlayground);
@@ -145,6 +145,10 @@ elements.runProgram.addEventListener('click', async () => {
           `Sensor read · front distance ${formatSensorDistance(step.reading.value)}`,
           false,
         );
+      },
+      onLoop(state, step) {
+        render(state);
+        showProgramMessage(`Repeat ${step.iteration} of ${step.total}`, false);
       },
     });
     render(result.state);
