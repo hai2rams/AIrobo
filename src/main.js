@@ -3,13 +3,16 @@ import {
   robotRenderModel,
   targetRenderModel,
 } from './playground.js';
+import { createMissionRuntime } from './mission-runtime.js';
+import { REACH_TARGET_MISSION } from './reach-target-mission.js';
 import { createBlocklyWorkspace } from './blockly-blocks.js';
 import {
   createBlocklyProgramController,
   ProgramCompileError,
 } from './blockly-program.js';
 
-const playground = createPlayground();
+const simulationPlayground = createPlayground();
+const playground = createMissionRuntime(REACH_TARGET_MISSION, simulationPlayground);
 const blocklyWorkspace = createBlocklyWorkspace(
   globalThis.Blockly,
   document.querySelector('#blockly-workspace'),
@@ -30,7 +33,21 @@ const elements = {
   eventCount: document.querySelector('#event-count'),
   programMessage: document.querySelector('#program-message'),
   runProgram: document.querySelector('#run-program'),
+  missionPanel: document.querySelector('#mission-panel'),
+  missionStatus: document.querySelector('#mission-status'),
+  missionAttempts: document.querySelector('#mission-attempts'),
+  missionDistance: document.querySelector('#mission-distance'),
+  missionFeedback: document.querySelector('#mission-feedback'),
+  missionTitle: document.querySelector('#mission-title'),
+  missionDescription: document.querySelector('#mission-description'),
+  missionTarget: document.querySelector('#mission-target'),
+  missionRadius: document.querySelector('#mission-radius'),
 };
+
+elements.missionTitle.textContent = REACH_TARGET_MISSION.title;
+elements.missionDescription.textContent = REACH_TARGET_MISSION.description;
+elements.missionTarget.textContent = `(${REACH_TARGET_MISSION.target.x}, ${REACH_TARGET_MISSION.target.y})`;
+elements.missionRadius.textContent = String(REACH_TARGET_MISSION.successRadius);
 
 function render(state) {
   const robot = robotRenderModel(state);
@@ -48,6 +65,12 @@ function render(state) {
   elements.step.textContent = String(state.step);
   elements.time.textContent = String(state.time);
   elements.eventCount.textContent = String(state.events.length);
+  elements.missionStatus.textContent = missionStatusLabel(state.mission.status);
+  elements.missionAttempts.textContent = String(state.mission.attemptCount);
+  elements.missionDistance.textContent = formatNumber(state.mission.distanceToTarget);
+  elements.missionFeedback.textContent = missionFeedback(state.mission.status);
+  elements.missionPanel.dataset.status = state.mission.status;
+  elements.target.classList.toggle('reached', state.mission.status === 'SUCCESS');
 
   elements.eventLog.replaceChildren();
 
@@ -96,6 +119,7 @@ elements.runProgram.addEventListener('click', async () => {
         );
       },
     });
+    render(result.state);
     showProgramMessage(`Program complete · ${result.actions.length} actions.`, false);
   } catch (error) {
     if (!(error instanceof ProgramCompileError)) {
@@ -117,6 +141,25 @@ document.querySelector('#clear-workspace').addEventListener('click', () => {
 function showProgramMessage(message, isError) {
   elements.programMessage.textContent = message;
   elements.programMessage.classList.toggle('error', isError);
+}
+
+function missionStatusLabel(status) {
+  return status === 'TRY_AGAIN'
+    ? 'Try Again'
+    : status.charAt(0) + status.slice(1).toLowerCase().replace('_', ' ');
+}
+
+function missionFeedback(status) {
+  switch (status) {
+    case 'SUCCESS':
+      return 'Target reached! Mission complete.';
+    case 'TRY_AGAIN':
+      return 'Target not reached. Adjust your program and try again.';
+    case 'IN_PROGRESS':
+      return 'Mission in progress…';
+    default:
+      return 'Run your Blockly program to begin the mission.';
+  }
 }
 
 render(playground.getState());

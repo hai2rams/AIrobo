@@ -87,9 +87,17 @@ export function createBlocklyProgramController(workspace, playground) {
     run() {
       assertNotRunning();
       const actions = compileWorkspace(workspace);
+      playground.beginAttempt?.();
+
+      try {
+        playground.executeActions(actions);
+      } finally {
+        playground.completeAttempt?.();
+      }
+
       return {
         actions,
-        state: playground.executeActions(actions),
+        state: playground.getState(),
       };
     },
 
@@ -101,10 +109,10 @@ export function createBlocklyProgramController(workspace, playground) {
       assertNotRunning();
       const steps = compileWorkspaceSteps(workspace);
       running = true;
+      playground.beginAttempt?.();
+      let state = playground.getState();
 
       try {
-        let state = playground.getState();
-
         for (let index = 0; index < steps.length; index += 1) {
           const step = steps[index];
           workspace.highlightBlock?.(step.block.id);
@@ -119,14 +127,16 @@ export function createBlocklyProgramController(workspace, playground) {
           await wait(delayMs);
         }
 
-        return {
-          actions: steps.map(({ action }) => action),
-          state,
-        };
       } finally {
+        playground.completeAttempt?.();
         workspace.highlightBlock?.(null);
         running = false;
       }
+
+      return {
+        actions: steps.map(({ action }) => action),
+        state: playground.getState(),
+      };
     },
 
     resetRobot() {

@@ -25,9 +25,9 @@ button {
 }
 
 .app-shell {
-  width: min(1120px, calc(100% - 32px));
+  width: min(1400px, calc(100% - 28px));
   margin: 0 auto;
-  padding: 44px 0;
+  padding: 28px 0;
 }
 
 .app-header {
@@ -35,7 +35,7 @@ button {
   align-items: flex-end;
   justify-content: space-between;
   gap: 24px;
-  margin-bottom: 24px;
+  margin-bottom: 18px;
 }
 
 .eyebrow,
@@ -87,10 +87,11 @@ h1 {
   box-shadow: 0 0 12px rgba(52, 211, 153, 0.7);
 }
 
-.workspace {
+.main-workspace {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 300px;
+  grid-template-columns: minmax(340px, 2fr) minmax(620px, 3fr);
   gap: 18px;
+  align-items: stretch;
 }
 
 .playground-column,
@@ -117,6 +118,7 @@ h1 {
   position: relative;
   width: 600px;
   height: 400px;
+  margin: 0 auto;
   overflow: hidden;
   background-color: #0d1422;
   background-image:
@@ -183,6 +185,16 @@ h1 {
 .target-core {
   position: absolute;
   border-radius: 50%;
+}
+
+.target.reached .target-ring {
+  border-color: #34d399;
+}
+
+.target.reached .target-core {
+  border-color: #d1fae5;
+  background: #10b981;
+  box-shadow: 0 0 24px rgba(52, 211, 153, 0.75);
 }
 
 .target-ring {
@@ -258,12 +270,6 @@ h1 {
   color: #fda4af;
 }
 
-.side-panel {
-  display: grid;
-  align-content: start;
-  gap: 18px;
-}
-
 .panel {
   padding: 20px;
 }
@@ -279,6 +285,125 @@ h1 {
 .panel h2 {
   font-size: 1rem;
   letter-spacing: -0.01em;
+}
+
+.mission-status {
+  padding: 5px 8px;
+  border-radius: 999px;
+  color: #9eb8f5;
+  background: #1b2945;
+  font-size: 0.66rem;
+  font-weight: 850;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.mission-panel[data-status="SUCCESS"] .mission-status {
+  color: #a7f3d0;
+  background: #123c36;
+}
+
+.mission-panel[data-status="TRY_AGAIN"] .mission-status {
+  color: #fecdd3;
+  background: #471d2a;
+}
+
+.mission-description,
+.mission-target,
+.mission-feedback {
+  color: #8995a9;
+  font-size: 0.76rem;
+  line-height: 1.5;
+}
+
+.mission-description {
+  margin: -4px 0 14px;
+}
+
+.mission-target {
+  margin: 11px 0 0;
+  color: #778398;
+}
+
+.mission-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1px;
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid #222c3d;
+  border-radius: 9px;
+  background: #222c3d;
+}
+
+.mission-metrics div {
+  padding: 10px 8px;
+  background: #111827;
+  text-align: center;
+}
+
+.mission-metrics dt {
+  color: #778398;
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.mission-metrics dd {
+  margin: 5px 0 0;
+  color: #dce7ff;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.8rem;
+}
+
+.mission-feedback {
+  min-height: 36px;
+  margin: 7px 0 0;
+}
+
+.mission-panel[data-status="SUCCESS"] .mission-feedback {
+  color: #86d9c3;
+}
+
+.mission-panel[data-status="TRY_AGAIN"] .mission-feedback {
+  color: #fda4af;
+}
+
+.mission-panel {
+  display: grid;
+  grid-template-areas:
+    "heading metrics feedback"
+    "description metrics target";
+  grid-template-columns: minmax(260px, 1.3fr) minmax(270px, 0.9fr) minmax(280px, 1.1fr);
+  align-items: center;
+  gap: 8px 24px;
+  margin-bottom: 18px;
+}
+
+.mission-panel .panel-heading {
+  grid-area: heading;
+  margin-bottom: 0;
+}
+
+.mission-panel .mission-description {
+  grid-area: description;
+  margin: 0;
+}
+
+.mission-panel .mission-metrics {
+  grid-area: metrics;
+}
+
+.mission-panel .mission-target {
+  grid-area: target;
+  margin: 0;
+}
+
+.mission-panel .mission-feedback {
+  grid-area: feedback;
+  min-height: 0;
+  margin: 0;
 }
 
 .state-grid {
@@ -365,14 +490,10 @@ h1 {
 }
 
 .program-panel {
-  margin-top: 18px;
+  min-width: 0;
 }
 
 .program-header {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 24px;
   margin-bottom: 16px;
 }
 
@@ -387,9 +508,11 @@ h1 {
 .program-actions {
   display: flex;
   gap: 10px;
+  margin-top: 12px;
 }
 
 .program-actions button {
+  flex: 1 1 140px;
   min-height: 42px;
   padding: 0 16px;
   border: 1px solid #303a4e;
@@ -444,7 +567,7 @@ h1 {
 
 .program-message {
   min-height: 20px;
-  margin: 12px 2px 0;
+  margin: 8px 2px 0;
   color: #86d9c3;
   font-size: 0.78rem;
 }
@@ -453,19 +576,50 @@ h1 {
   color: #fda4af;
 }
 
-@media (max-width: 920px) {
-  .workspace { grid-template-columns: 1fr; }
-  .side-panel { grid-template-columns: repeat(2, 1fr); }
+.inspector-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+  margin-top: 18px;
 }
 
-@media (max-width: 620px) {
+.inspector-row .state-grid {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.inspector-row .event-log {
+  max-height: 150px;
+}
+
+@media (max-width: 1000px) {
+  .main-workspace { grid-template-columns: 1fr; }
+
+  .mission-panel {
+    grid-template-areas:
+      "heading metrics"
+      "description metrics"
+      "feedback target";
+    grid-template-columns: minmax(0, 1.25fr) minmax(250px, 0.75fr);
+  }
+
+  .blockly-workspace { height: 380px; }
+}
+
+@media (max-width: 700px) {
   .app-shell { width: min(100% - 20px, 1120px); padding: 26px 0; }
   .app-header { align-items: flex-start; flex-direction: column; }
-  .side-panel { grid-template-columns: 1fr; }
+  .mission-panel { display: block; }
+  .mission-panel .panel-heading { margin-bottom: 18px; }
+  .mission-panel .mission-description { margin: -4px 0 14px; }
+  .mission-panel .mission-target { margin: 11px 0 0; }
+  .mission-panel .mission-feedback { min-height: 36px; margin: 7px 0 0; }
+  .inspector-row {
+    grid-template-columns: 1fr;
+  }
   .controls { grid-template-columns: repeat(2, 1fr); }
-  .program-header { align-items: flex-start; flex-direction: column; }
-  .program-actions { width: 100%; }
-  .program-actions button { flex: 1; }
+  .program-actions { width: 100%; flex-direction: column; }
+  .program-actions button { flex-basis: auto; }
 }
 
 @media (prefers-reduced-motion: reduce) {
