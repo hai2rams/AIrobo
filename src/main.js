@@ -4,25 +4,27 @@ import {
   targetRenderModel,
 } from './playground.js';
 import { createMissionRuntime } from './mission-runtime.js';
-import { VELOCITY_DIRECTION_MISSION } from './velocity-direction-mission.js';
+import { ACCELERATION_FUNDAMENTALS_MISSION } from './acceleration-fundamentals-mission.js';
 import { createSensorRuntime } from './sensor-runtime.js?v=m5-spec-contract';
 import { createPhysicsRuntime } from './physics-runtime.js?v=m7-physics-contract';
 import { createVectorRuntime } from './vector-runtime.js?v=m8-vector-contract';
 import { velocityArrowRenderModel } from './vector-motion.js?v=m8-vector-contract';
-import { createBlocklyWorkspace } from './blockly-blocks.js?v=m8-vector-contract';
+import { createAccelerationRuntime } from './acceleration-runtime.js?v=m9-acceleration-contract';
+import { createBlocklyWorkspace } from './blockly-blocks.js?v=m9-acceleration-contract';
 import {
   createBlocklyProgramController,
   ProgramCompileError,
-} from './blockly-program.js?v=m8-vector-contract';
+} from './blockly-program.js?v=m9-acceleration-contract';
 
 const simulationPlayground = createPlayground();
 const missionPlayground = createMissionRuntime(
-  VELOCITY_DIRECTION_MISSION,
+  ACCELERATION_FUNDAMENTALS_MISSION,
   simulationPlayground,
 );
 const sensorPlayground = createSensorRuntime(missionPlayground);
 const physicsPlayground = createPhysicsRuntime(sensorPlayground);
-const playground = createVectorRuntime(physicsPlayground);
+const vectorPlayground = createVectorRuntime(physicsPlayground);
+const playground = createAccelerationRuntime(vectorPlayground);
 const blocklyWorkspace = createBlocklyWorkspace(
   globalThis.Blockly,
   document.querySelector('#blockly-workspace'),
@@ -68,12 +70,23 @@ const elements = {
   vectorDy: document.querySelector('#vector-dy'),
   vectorTotalDistance: document.querySelector('#vector-total-distance'),
   vectorNetDisplacement: document.querySelector('#vector-net-displacement'),
+  accelerationValue: document.querySelector('#acceleration-value'),
+  accelerationInitial: document.querySelector('#acceleration-initial'),
+  accelerationFinal: document.querySelector('#acceleration-final'),
+  accelerationRequestedTime: document.querySelector('#acceleration-requested-time'),
+  accelerationEffectiveTime: document.querySelector('#acceleration-effective-time'),
+  accelerationDisplacement: document.querySelector('#acceleration-displacement'),
+  accelerationVelocityEquation: document.querySelector('#acceleration-velocity-equation'),
+  accelerationDisplacementEquation: document.querySelector('#acceleration-displacement-equation'),
+  accelerationExplanation: document.querySelector('#acceleration-explanation'),
+  velocityGraphLine: document.querySelector('#velocity-time-line'),
+  positionGraphLine: document.querySelector('#position-time-line'),
 };
 
-elements.missionTitle.textContent = VELOCITY_DIRECTION_MISSION.title;
-elements.missionDescription.textContent = VELOCITY_DIRECTION_MISSION.description;
-elements.missionTarget.textContent = `(${VELOCITY_DIRECTION_MISSION.target.x}, ${VELOCITY_DIRECTION_MISSION.target.y})`;
-elements.missionRadius.textContent = String(VELOCITY_DIRECTION_MISSION.successRadius);
+elements.missionTitle.textContent = ACCELERATION_FUNDAMENTALS_MISSION.title;
+elements.missionDescription.textContent = ACCELERATION_FUNDAMENTALS_MISSION.description;
+elements.missionTarget.textContent = `(${ACCELERATION_FUNDAMENTALS_MISSION.target.x}, ${ACCELERATION_FUNDAMENTALS_MISSION.target.y})`;
+elements.missionRadius.textContent = String(ACCELERATION_FUNDAMENTALS_MISSION.successRadius);
 
 function render(state) {
   const robot = robotRenderModel(state);
@@ -111,6 +124,7 @@ function render(state) {
   elements.target.classList.toggle('reached', state.mission.status === 'SUCCESS');
   renderPhysics(state.physics);
   renderVector(state.vector);
+  renderAcceleration(state.acceleration);
 
   elements.eventLog.replaceChildren();
 
@@ -129,6 +143,54 @@ function render(state) {
   }
 
   elements.eventLog.scrollTop = elements.eventLog.scrollHeight;
+}
+
+function renderAcceleration(acceleration) {
+  elements.accelerationValue.textContent = `${formatNumber(acceleration.acceleration)} units/s²`;
+
+  if (!acceleration.lastCalculation) {
+    elements.accelerationInitial.textContent = '—';
+    elements.accelerationFinal.textContent = '—';
+    elements.accelerationRequestedTime.textContent = '—';
+    elements.accelerationEffectiveTime.textContent = '—';
+    elements.accelerationDisplacement.textContent = '—';
+    elements.accelerationVelocityEquation.textContent = 'vf = vi + at';
+    elements.accelerationDisplacementEquation.textContent = 'd = vi t + 1/2 a t²';
+    elements.accelerationExplanation.textContent = 'Run an accelerate-for-time block to observe changing velocity.';
+    elements.velocityGraphLine.setAttribute('points', '18,102 222,102');
+    elements.positionGraphLine.setAttribute('points', '18,102 222,102');
+    return;
+  }
+
+  const calculation = acceleration.lastCalculation;
+  elements.accelerationInitial.textContent = `${formatNumber(calculation.initialVelocity)} units/s`;
+  elements.accelerationFinal.textContent = `${formatNumber(calculation.finalVelocity)} units/s`;
+  elements.accelerationRequestedTime.textContent = `${formatNumber(calculation.requestedTime)} s`;
+  elements.accelerationEffectiveTime.textContent = `${formatNumber(calculation.effectiveTime)} s`;
+  elements.accelerationDisplacement.textContent = `${formatNumber(calculation.displacement)} units`;
+  elements.accelerationVelocityEquation.textContent = `${formatNumber(calculation.finalVelocity)} = ${formatNumber(calculation.initialVelocity)} + ${formatNumber(calculation.acceleration)} × ${formatNumber(calculation.effectiveTime)}`;
+  elements.accelerationDisplacementEquation.textContent = `${formatNumber(calculation.displacement)} = ${formatNumber(calculation.initialVelocity)} × ${formatNumber(calculation.effectiveTime)} + ½ × ${formatNumber(calculation.acceleration)} × ${formatNumber(calculation.effectiveTime)}²`;
+  elements.accelerationExplanation.textContent = calculation.stoppedEarly
+    ? `Robot stopped after ${formatNumber(calculation.stoppingTime)} s; the remaining requested time caused no reversal.`
+    : 'The slope of velocity-time is acceleration; its area is displacement.';
+  elements.velocityGraphLine.setAttribute(
+    'points',
+    graphPoints(acceleration.graphs.velocityTime.points),
+  );
+  elements.positionGraphLine.setAttribute(
+    'points',
+    graphPoints(acceleration.graphs.positionTime.points),
+  );
+}
+
+function graphPoints(points) {
+  const maxTime = Math.max(1, ...points.map(({ time }) => time));
+  const maxValue = Math.max(1, ...points.map(({ value }) => value));
+  return points.map(({ time, value }) => {
+    const x = 18 + (time / maxTime) * 204;
+    const y = 102 - (value / maxValue) * 84;
+    return `${x.toFixed(2)},${y.toFixed(2)}`;
+  }).join(' ');
 }
 
 function renderVector(vector) {
@@ -225,6 +287,13 @@ elements.runProgram.addEventListener('click', async () => {
             false,
           );
         }
+      },
+      onAcceleration(state, step) {
+        render(state);
+        const message = step.operation === 'SET_ACCELERATION'
+          ? `Acceleration set · ${formatNumber(step.acceleration)} units/s²`
+          : `Acceleration · ${formatNumber(step.calculation.initialVelocity)} → ${formatNumber(step.calculation.finalVelocity)} units/s · ${formatNumber(step.calculation.displacement)} units`;
+        showProgramMessage(message, false);
       },
     });
     render(result.state);

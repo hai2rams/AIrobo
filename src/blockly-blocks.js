@@ -1,4 +1,4 @@
-import { BLOCK_TYPES } from './blockly-program.js?v=m8-vector-contract';
+import { BLOCK_TYPES } from './blockly-program.js?v=m9-acceleration-contract';
 
 export const ROBOT_TOOLBOX = Object.freeze({
   kind: 'flyoutToolbox',
@@ -10,6 +10,8 @@ export const ROBOT_TOOLBOX = Object.freeze({
     { kind: 'block', type: BLOCK_TYPES.SET_SPEED },
     { kind: 'block', type: BLOCK_TYPES.SET_HEADING },
     { kind: 'block', type: BLOCK_TYPES.MOVE_FOR_TIME },
+    { kind: 'block', type: BLOCK_TYPES.SET_ACCELERATION },
+    { kind: 'block', type: BLOCK_TYPES.ACCELERATE_FOR_TIME },
     { kind: 'block', type: BLOCK_TYPES.REPEAT },
     { kind: 'block', type: BLOCK_TYPES.IF_ELSE },
     { kind: 'block', type: BLOCK_TYPES.FRONT_DISTANCE },
@@ -37,15 +39,15 @@ export const ACCEPTANCE_PROGRAM = Object.freeze({
         next: {
           block: {
             type: BLOCK_TYPES.SET_SPEED,
-            fields: { SPEED: 40 },
+            fields: { SPEED: 10 },
             next: {
               block: {
-                type: BLOCK_TYPES.SET_HEADING,
-                fields: { HEADING: 26.5650511771 },
+                type: BLOCK_TYPES.SET_ACCELERATION,
+                fields: { ACCELERATION: 2 },
                 next: {
                   block: {
-                    type: BLOCK_TYPES.MOVE_FOR_TIME,
-                    fields: { DURATION: 5.59016994375 },
+                    type: BLOCK_TYPES.ACCELERATE_FOR_TIME,
+                    fields: { DURATION: 5 },
                   },
                 },
               },
@@ -159,6 +161,39 @@ export function registerRobotBlocks(Blockly) {
       nextStatement: null,
       colour: 330,
       tooltip: 'Set a direction through the existing robot turn action.',
+    },
+    {
+      type: BLOCK_TYPES.SET_ACCELERATION,
+      message0: 'set acceleration %1 units/s²',
+      args0: [
+        {
+          type: 'field_number',
+          name: 'ACCELERATION',
+          value: 1,
+          min: -50,
+          max: 50,
+        },
+      ],
+      previousStatement: null,
+      nextStatement: null,
+      colour: 10,
+      tooltip: 'Set constant acceleration from -50 to 50 units/s².',
+    },
+    {
+      type: BLOCK_TYPES.ACCELERATE_FOR_TIME,
+      message0: 'accelerate for %1 seconds',
+      args0: [
+        {
+          type: 'field_number',
+          name: 'DURATION',
+          value: 5,
+          min: 0,
+        },
+      ],
+      previousStatement: null,
+      nextStatement: null,
+      colour: 10,
+      tooltip: 'Move with constant acceleration for a finite duration.',
     },
     {
       type: BLOCK_TYPES.REPEAT,

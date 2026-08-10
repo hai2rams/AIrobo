@@ -164,6 +164,46 @@ export function createVectorRuntime(playground) {
       };
     },
 
+    moveWithVector({ distance, duration, speed }) {
+      const before = playground.getState();
+      const previousCount = before.events.length;
+      const action = { type: 'MOVE_FORWARD', distance };
+      const predicted = deriveVectorCalculation({
+        speed,
+        headingDegrees: before.robot.heading,
+        duration,
+        distance,
+      });
+      playground.executeActions([action]);
+      const after = playground.getState();
+      const newEvents = after.events.slice(previousCount);
+      eventLog.push(predicted, ...newEvents);
+      vectorState = {
+        ...vectorState,
+        headingDegrees: predicted.headingDegrees,
+        velocity: { ...predicted.velocity },
+        lastMovement: {
+          duration,
+          distance,
+          dx: predicted.displacement.x,
+          dy: predicted.displacement.y,
+        },
+        lastCalculation: predicted,
+      };
+      includeDistance(distance);
+
+      return {
+        action,
+        vectorCalculation: predicted,
+        displacementMatchesKernel: displacementAgreesWithKernel(
+          predicted,
+          before.robot,
+          after.robot,
+        ),
+        state: decoratedState(),
+      };
+    },
+
     execute(control) {
       if (control === 'RESET') {
         playground.execute('RESET');

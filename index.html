@@ -19,7 +19,7 @@
     <main class="app-shell">
       <header class="app-header">
         <div>
-          <p class="eyebrow">M8 · Velocity and direction vectors</p>
+          <p class="eyebrow">M9 · Acceleration and changing velocity</p>
           <h1>Visual Playground</h1>
           <p class="subtitle">Guide one robot through a deterministic 2D world.</p>
         </div>
@@ -30,17 +30,17 @@
         <div class="panel-heading">
           <div>
             <p class="panel-kicker">Active mission</p>
-            <h2 id="mission-title">Move in Two Dimensions</h2>
+            <h2 id="mission-title">Speed Up to the Target</h2>
           </div>
           <span id="mission-status" class="mission-status">Ready</span>
         </div>
-        <p id="mission-description" class="mission-description">Choose a speed, direction, and time to reach the target.</p>
+        <p id="mission-description" class="mission-description">Use initial speed, acceleration, and time to reach the target.</p>
         <dl class="mission-metrics" aria-live="polite">
           <div><dt>Distance</dt><dd id="mission-distance">200</dd></div>
           <div><dt>Attempts</dt><dd id="mission-attempts">0</dd></div>
           <div><dt>Radius</dt><dd id="mission-radius">15</dd></div>
         </dl>
-        <p class="mission-target">Target: <span id="mission-target">(300, 300)</span></p>
+        <p class="mission-target">Target: <span id="mission-target">(175, 200)</span></p>
         <p id="mission-feedback" class="mission-feedback">Run your Blockly program to begin the mission.</p>
       </section>
 
@@ -63,7 +63,7 @@
           <div class="world-frame">
             <div id="world" class="world" aria-label="600 by 400 robot world">
               <div id="obstacle" class="obstacle" aria-label="Wall obstacle"></div>
-              <div id="target" class="target" aria-label="Target at x 300, y 300">
+              <div id="target" class="target" aria-label="Target at x 175, y 200">
                 <span class="target-ring"></span>
                 <span class="target-core"></span>
               </div>
@@ -117,7 +117,7 @@
           <div class="panel-heading">
             <div>
               <p class="panel-kicker">Motion fundamentals</p>
-              <h2 id="physics-title">Physics — Velocity</h2>
+              <h2 id="physics-title">Physics — Acceleration</h2>
             </div>
           </div>
           <dl class="physics-grid" aria-live="polite">
@@ -143,6 +143,20 @@
               <div><dt>Net displacement</dt><dd id="vector-net-displacement">0 units</dd></div>
             </dl>
           </div>
+          <div class="acceleration-section" aria-live="polite">
+            <h3>Constant acceleration</h3>
+            <dl class="vector-grid">
+              <div><dt>Acceleration</dt><dd id="acceleration-value">0 units/s²</dd></div>
+              <div><dt>Initial velocity</dt><dd id="acceleration-initial">—</dd></div>
+              <div><dt>Final velocity</dt><dd id="acceleration-final">—</dd></div>
+              <div><dt>Requested time</dt><dd id="acceleration-requested-time">—</dd></div>
+              <div><dt>Effective time</dt><dd id="acceleration-effective-time">—</dd></div>
+              <div><dt>Displacement</dt><dd id="acceleration-displacement">—</dd></div>
+            </dl>
+            <p id="acceleration-velocity-equation" class="acceleration-equation">vf = vi + at</p>
+            <p id="acceleration-displacement-equation" class="acceleration-equation">d = vi t + 1/2 a t²</p>
+            <p id="acceleration-explanation" class="physics-explanation">Run an accelerate-for-time block to observe changing velocity.</p>
+          </div>
         </section>
 
         <section class="panel event-panel" aria-labelledby="events-title">
@@ -158,9 +172,32 @@
           </ol>
         </section>
       </section>
+
+      <section class="learning-graphs" aria-label="Acceleration learning visualizations">
+        <figure class="panel learning-graph">
+          <figcaption>
+            <span>Velocity–time</span>
+            <small>Slope = acceleration</small>
+          </figcaption>
+          <svg viewBox="0 0 240 120" role="img" aria-label="Velocity-time graph for the last acceleration segment">
+            <path class="graph-axis" d="M18 12V102H228 M18 102H228" />
+            <polyline id="velocity-time-line" class="graph-line velocity-line" points="18,102 222,102" />
+          </svg>
+        </figure>
+        <figure class="panel learning-graph">
+          <figcaption>
+            <span>Position–time</span>
+            <small>Area under velocity–time = displacement</small>
+          </figcaption>
+          <svg viewBox="0 0 240 120" role="img" aria-label="Position-time graph for the last acceleration segment">
+            <path class="graph-axis" d="M18 12V102H228 M18 102H228" />
+            <polyline id="position-time-line" class="graph-line position-line" points="18,102 222,102" />
+          </svg>
+        </figure>
+      </section>
     </main>
 
     <script src="./node_modules/blockly/blockly.min.js"></script>
-    <script type="module" src="./src/main.js?v=m8-vector-contract"></script>
+    <script type="module" src="./src/main.js?v=m9-acceleration-contract"></script>
   </body>
 </html>

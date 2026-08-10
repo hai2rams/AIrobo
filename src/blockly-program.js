@@ -3,6 +3,7 @@ import {
   MAX_MOVE_DURATION,
   MAX_PHYSICS_SPEED,
 } from './physics-motion.js';
+import { MAX_ACCELERATION_MAGNITUDE } from './acceleration-motion.js';
 
 export const BLOCK_TYPES = Object.freeze({
   WHEN_START: 'when_start',
@@ -15,6 +16,8 @@ export const BLOCK_TYPES = Object.freeze({
   SET_SPEED: 'set_speed',
   SET_HEADING: 'set_heading',
   MOVE_FOR_TIME: 'move_for_time',
+  SET_ACCELERATION: 'set_acceleration',
+  ACCELERATE_FOR_TIME: 'accelerate_for_time',
   LOGIC_COMPARE: 'logic_compare',
   NUMBER: 'math_number',
 });
@@ -144,6 +147,7 @@ export function createBlocklyProgramController(workspace, playground) {
       onLoop = () => {},
       onPhysics = () => {},
       onVector = () => {},
+      onAcceleration = () => {},
     } = {}) {
       assertNotRunning();
       const program = compileWorkspaceProgram(workspace);
@@ -170,6 +174,7 @@ export function createBlocklyProgramController(workspace, playground) {
           onLoop,
           onPhysics,
           onVector,
+          onAcceleration,
           fixedTotal,
         });
       } finally {
@@ -243,6 +248,23 @@ function compileSequence(firstBlock) {
         kind: 'SET_HEADING',
         block,
         heading: readHeadingValue(block),
+      });
+    } else if (block.type === BLOCK_TYPES.SET_ACCELERATION) {
+      nodes.push({
+        kind: 'SET_ACCELERATION',
+        block,
+        acceleration: readAccelerationValue(block),
+      });
+    } else if (block.type === BLOCK_TYPES.ACCELERATE_FOR_TIME) {
+      nodes.push({
+        kind: 'ACCELERATE_FOR_TIME',
+        block,
+        duration: readPhysicsValue(
+          block,
+          'DURATION',
+          'Acceleration duration',
+          MAX_MOVE_DURATION,
+        ),
       });
     } else {
       nodes.push({ kind: 'ACTION', block, action: actionFromBlock(block) });
@@ -324,6 +346,20 @@ function executeProgram(nodes, context) {
       context.budget.consume('set heading');
       context.budget.consume('robot action');
       const result = setHeadingResult(context.playground, node.heading);
+      context.actions.push(result.action);
+      continue;
+    }
+
+    if (node.kind === 'SET_ACCELERATION') {
+      context.budget.consume('set acceleration');
+      setAccelerationResult(context.playground, node.acceleration);
+      continue;
+    }
+
+    if (node.kind === 'ACCELERATE_FOR_TIME') {
+      context.budget.consume('acceleration calculation');
+      context.budget.consume('robot action');
+      const result = accelerateForTimeResult(context.playground, node.duration);
       context.actions.push(result.action);
       continue;
     }
@@ -422,6 +458,43 @@ async function executeProgramSequentially(nodes, context) {
         requestedHeading: node.heading,
         headingDegrees: result.headingDegrees,
         action: result.action,
+        index,
+        total: context.fixedTotal,
+      });
+      await context.wait(context.delayMs);
+      context.assertActive();
+      continue;
+    }
+
+    if (node.kind === 'SET_ACCELERATION') {
+      context.budget.consume('set acceleration');
+      context.workspace.highlightBlock?.(node.block.id);
+      state = setAccelerationResult(context.playground, node.acceleration);
+      context.onAcceleration(state, {
+        operation: 'SET_ACCELERATION',
+        block: node.block,
+        acceleration: node.acceleration,
+      });
+      await context.wait(context.delayMs);
+      context.assertActive();
+      continue;
+    }
+
+    if (node.kind === 'ACCELERATE_FOR_TIME') {
+      context.budget.consume('acceleration calculation');
+      context.budget.consume('robot action');
+      context.workspace.highlightBlock?.(node.block.id);
+      const result = accelerateForTimeResult(context.playground, node.duration);
+      state = result.state;
+      const index = context.actions.length;
+      context.actions.push(result.action);
+      context.onAcceleration(state, {
+        operation: 'ACCELERATE_FOR_TIME',
+        block: node.block,
+        duration: node.duration,
+        action: result.action,
+        calculation: result.calculation,
+        vectorCalculation: result.vectorCalculation,
         index,
         total: context.fixedTotal,
       });
@@ -632,6 +705,28 @@ function setHeadingResult(playground, heading) {
   }
 }
 
+function setAccelerationResult(playground, acceleration) {
+  if (typeof playground.setAcceleration !== 'function') {
+    throw new ProgramCompileError('This program requires the acceleration learning runtime.');
+  }
+  try {
+    return playground.setAcceleration(acceleration);
+  } catch (error) {
+    throw new ProgramCompileError(error.message);
+  }
+}
+
+function accelerateForTimeResult(playground, duration) {
+  if (typeof playground.accelerateForTime !== 'function') {
+    throw new ProgramCompileError('This program requires the acceleration learning runtime.');
+  }
+  try {
+    return playground.accelerateForTime(duration);
+  } catch (error) {
+    throw new ProgramCompileError(error.message);
+  }
+}
+
 function createExecutionContext(playground, actions, isActive) {
   let executionSteps = 0;
 
@@ -675,5 +770,22 @@ function readHeadingValue(block) {
     throw new ProgramCompileError('Heading must be a finite number.');
   }
 
+  return value;
+}
+
+function readAccelerationValue(block) {
+  const rawValue = block.getFieldValue('ACCELERATION');
+  const value = Number(rawValue);
+
+  if (
+    rawValue === null
+    || rawValue === ''
+    || !Number.isFinite(value)
+    || Math.abs(value) > MAX_ACCELERATION_MAGNITUDE
+  ) {
+    throw new ProgramCompileError(
+      `Acceleration must be a finite number from -${MAX_ACCELERATION_MAGNITUDE} to ${MAX_ACCELERATION_MAGNITUDE}.`,
+    );
+  }
   return value;
 }
