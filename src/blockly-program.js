@@ -13,6 +13,7 @@ export const BLOCK_TYPES = Object.freeze({
   IF_ELSE: 'if_else',
   REPEAT: 'repeat_times',
   SET_SPEED: 'set_speed',
+  SET_HEADING: 'set_heading',
   MOVE_FOR_TIME: 'move_for_time',
   LOGIC_COMPARE: 'logic_compare',
   NUMBER: 'math_number',
@@ -142,6 +143,7 @@ export function createBlocklyProgramController(workspace, playground) {
       onSensor = () => {},
       onLoop = () => {},
       onPhysics = () => {},
+      onVector = () => {},
     } = {}) {
       assertNotRunning();
       const program = compileWorkspaceProgram(workspace);
@@ -167,6 +169,7 @@ export function createBlocklyProgramController(workspace, playground) {
           onSensor,
           onLoop,
           onPhysics,
+          onVector,
           fixedTotal,
         });
       } finally {
@@ -234,6 +237,12 @@ function compileSequence(firstBlock) {
           'Move duration',
           MAX_MOVE_DURATION,
         ),
+      });
+    } else if (block.type === BLOCK_TYPES.SET_HEADING) {
+      nodes.push({
+        kind: 'SET_HEADING',
+        block,
+        heading: readHeadingValue(block),
       });
     } else {
       nodes.push({ kind: 'ACTION', block, action: actionFromBlock(block) });
@@ -311,6 +320,14 @@ function executeProgram(nodes, context) {
       continue;
     }
 
+    if (node.kind === 'SET_HEADING') {
+      context.budget.consume('set heading');
+      context.budget.consume('robot action');
+      const result = setHeadingResult(context.playground, node.heading);
+      context.actions.push(result.action);
+      continue;
+    }
+
     if (node.kind === 'IF_ELSE') {
       context.budget.consume('IF condition');
       const branch = evaluateCondition(node.condition, context)
@@ -378,6 +395,33 @@ async function executeProgramSequentially(nodes, context) {
         duration: node.duration,
         action: result.action,
         calculation: result.calculation,
+        index,
+        total: context.fixedTotal,
+      });
+      context.onVector(state, {
+        operation: 'MOVE_FOR_TIME',
+        block: node.block,
+        calculation: result.vectorCalculation,
+      });
+      await context.wait(context.delayMs);
+      context.assertActive();
+      continue;
+    }
+
+    if (node.kind === 'SET_HEADING') {
+      context.budget.consume('set heading');
+      context.budget.consume('robot action');
+      context.workspace.highlightBlock?.(node.block.id);
+      const result = setHeadingResult(context.playground, node.heading);
+      state = result.state;
+      const index = context.actions.length;
+      context.actions.push(result.action);
+      context.onVector(state, {
+        operation: 'SET_HEADING',
+        block: node.block,
+        requestedHeading: node.heading,
+        headingDegrees: result.headingDegrees,
+        action: result.action,
         index,
         total: context.fixedTotal,
       });
@@ -576,6 +620,18 @@ function moveForTimeResult(playground, duration) {
   }
 }
 
+function setHeadingResult(playground, heading) {
+  if (typeof playground.setHeading !== 'function') {
+    throw new ProgramCompileError('This program requires the vector learning runtime.');
+  }
+
+  try {
+    return playground.setHeading(heading);
+  } catch (error) {
+    throw new ProgramCompileError(error.message);
+  }
+}
+
 function createExecutionContext(playground, actions, isActive) {
   let executionSteps = 0;
 
@@ -606,6 +662,17 @@ function readMagnitude(block, fieldName, label) {
 
   if (rawValue === null || rawValue === '' || !Number.isFinite(value) || value < 0) {
     throw new ProgramCompileError(`${label} must be a valid non-negative number.`);
+  }
+
+  return value;
+}
+
+function readHeadingValue(block) {
+  const rawValue = block.getFieldValue('HEADING');
+  const value = Number(rawValue);
+
+  if (rawValue === null || rawValue === '' || !Number.isFinite(value)) {
+    throw new ProgramCompileError('Heading must be a finite number.');
   }
 
   return value;

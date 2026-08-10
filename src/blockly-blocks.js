@@ -1,4 +1,4 @@
-import { BLOCK_TYPES } from './blockly-program.js?v=m7-physics-contract';
+import { BLOCK_TYPES } from './blockly-program.js?v=m8-vector-contract';
 
 export const ROBOT_TOOLBOX = Object.freeze({
   kind: 'flyoutToolbox',
@@ -8,6 +8,7 @@ export const ROBOT_TOOLBOX = Object.freeze({
     { kind: 'block', type: BLOCK_TYPES.TURN_LEFT },
     { kind: 'block', type: BLOCK_TYPES.TURN_RIGHT },
     { kind: 'block', type: BLOCK_TYPES.SET_SPEED },
+    { kind: 'block', type: BLOCK_TYPES.SET_HEADING },
     { kind: 'block', type: BLOCK_TYPES.MOVE_FOR_TIME },
     { kind: 'block', type: BLOCK_TYPES.REPEAT },
     { kind: 'block', type: BLOCK_TYPES.IF_ELSE },
@@ -39,8 +40,14 @@ export const ACCEPTANCE_PROGRAM = Object.freeze({
             fields: { SPEED: 40 },
             next: {
               block: {
-                type: BLOCK_TYPES.MOVE_FOR_TIME,
-                fields: { DURATION: 5 },
+                type: BLOCK_TYPES.SET_HEADING,
+                fields: { HEADING: 26.5650511771 },
+                next: {
+                  block: {
+                    type: BLOCK_TYPES.MOVE_FOR_TIME,
+                    fields: { DURATION: 5.59016994375 },
+                  },
+                },
               },
             },
           },
@@ -137,6 +144,21 @@ export function registerRobotBlocks(Blockly) {
       nextStatement: null,
       colour: 285,
       tooltip: 'Move using distance = speed × time.',
+    },
+    {
+      type: BLOCK_TYPES.SET_HEADING,
+      message0: 'set heading %1°',
+      args0: [
+        {
+          type: 'field_number',
+          name: 'HEADING',
+          value: 0,
+        },
+      ],
+      previousStatement: null,
+      nextStatement: null,
+      colour: 330,
+      tooltip: 'Set a direction through the existing robot turn action.',
     },
     {
       type: BLOCK_TYPES.REPEAT,

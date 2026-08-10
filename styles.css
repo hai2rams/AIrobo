@@ -143,6 +143,30 @@ h1 {
   height: 34px;
 }
 
+.velocity-arrow {
+  position: absolute;
+  z-index: 3;
+  height: 4px;
+  transform-origin: left center;
+  border-radius: 999px;
+  background: #22d3ee;
+  box-shadow: 0 0 12px rgba(34, 211, 238, 0.8);
+  pointer-events: none;
+  transition: left 180ms ease, top 180ms ease, width 180ms ease, transform 180ms ease, opacity 180ms ease;
+}
+
+.velocity-arrow::after {
+  position: absolute;
+  top: 50%;
+  right: -2px;
+  width: 10px;
+  height: 10px;
+  transform: translateY(-50%) rotate(45deg);
+  border-top: 3px solid #a5f3fc;
+  border-right: 3px solid #a5f3fc;
+  content: "";
+}
+
 .obstacle {
   position: absolute;
   z-index: 1;
@@ -430,6 +454,51 @@ h1 {
   border: 1px solid #222c3d;
   border-radius: 10px;
   background: #222c3d;
+}
+
+.vector-section {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid #263044;
+}
+
+.vector-section h3 {
+  margin: 0 0 8px;
+  color: #8ba9ee;
+  font-size: 0.66rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.vector-section h3:not(:first-child) {
+  margin-top: 14px;
+}
+
+.vector-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px 12px;
+  margin: 0;
+}
+
+.vector-grid div {
+  min-width: 0;
+}
+
+.vector-grid dt {
+  color: #778398;
+  font-size: 0.62rem;
+}
+
+.vector-grid dd {
+  margin: 3px 0 0;
+  color: #c7d7fa;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.72rem;
+}
+
+.vector-summary {
+  grid-template-columns: 1fr;
 }
 
 .state-grid div {

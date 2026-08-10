@@ -19,7 +19,7 @@
     <main class="app-shell">
       <header class="app-header">
         <div>
-          <p class="eyebrow">M7 · Physics motion fundamentals</p>
+          <p class="eyebrow">M8 · Velocity and direction vectors</p>
           <h1>Visual Playground</h1>
           <p class="subtitle">Guide one robot through a deterministic 2D world.</p>
         </div>
@@ -30,17 +30,17 @@
         <div class="panel-heading">
           <div>
             <p class="panel-kicker">Active mission</p>
-            <h2 id="mission-title">Speed × Time</h2>
+            <h2 id="mission-title">Move in Two Dimensions</h2>
           </div>
           <span id="mission-status" class="mission-status">Ready</span>
         </div>
-        <p id="mission-description" class="mission-description">Use speed and time to move the robot to the target.</p>
+        <p id="mission-description" class="mission-description">Choose a speed, direction, and time to reach the target.</p>
         <dl class="mission-metrics" aria-live="polite">
           <div><dt>Distance</dt><dd id="mission-distance">200</dd></div>
           <div><dt>Attempts</dt><dd id="mission-attempts">0</dd></div>
           <div><dt>Radius</dt><dd id="mission-radius">15</dd></div>
         </dl>
-        <p class="mission-target">Target: <span id="mission-target">(300, 200)</span></p>
+        <p class="mission-target">Target: <span id="mission-target">(300, 300)</span></p>
         <p id="mission-feedback" class="mission-feedback">Run your Blockly program to begin the mission.</p>
       </section>
 
@@ -63,10 +63,11 @@
           <div class="world-frame">
             <div id="world" class="world" aria-label="600 by 400 robot world">
               <div id="obstacle" class="obstacle" aria-label="Wall obstacle"></div>
-              <div id="target" class="target" aria-label="Target at x 300, y 200">
+              <div id="target" class="target" aria-label="Target at x 300, y 300">
                 <span class="target-ring"></span>
                 <span class="target-core"></span>
               </div>
+              <div id="velocity-arrow" class="velocity-arrow" aria-label="Velocity direction arrow"></div>
               <div id="robot" class="robot" aria-label="Robot">
                 <span class="robot-body"></span>
                 <span class="robot-heading"></span>
@@ -116,7 +117,7 @@
           <div class="panel-heading">
             <div>
               <p class="panel-kicker">Motion fundamentals</p>
-              <h2 id="physics-title">Physics</h2>
+              <h2 id="physics-title">Physics — Velocity</h2>
             </div>
           </div>
           <dl class="physics-grid" aria-live="polite">
@@ -127,6 +128,21 @@
           <p id="physics-equation" class="physics-equation">distance = speed × time</p>
           <p id="physics-values" class="physics-values">Run a move-for-time block to calculate motion.</p>
           <p id="physics-explanation" class="physics-explanation">Set a speed, then choose how long the robot should move.</p>
+          <div class="vector-section" aria-live="polite">
+            <h3>Velocity components</h3>
+            <dl class="vector-grid">
+              <div><dt>Heading</dt><dd id="vector-heading">0°</dd></div>
+              <div><dt>vx</dt><dd id="vector-vx">0 units/s</dd></div>
+              <div><dt>vy</dt><dd id="vector-vy">0 units/s</dd></div>
+              <div><dt>Last dx</dt><dd id="vector-dx">—</dd></div>
+              <div><dt>Last dy</dt><dd id="vector-dy">—</dd></div>
+            </dl>
+            <h3>Run summary</h3>
+            <dl class="vector-grid vector-summary">
+              <div><dt>Total distance</dt><dd id="vector-total-distance">0 units</dd></div>
+              <div><dt>Net displacement</dt><dd id="vector-net-displacement">0 units</dd></div>
+            </dl>
+          </div>
         </section>
 
         <section class="panel event-panel" aria-labelledby="events-title">
@@ -145,6 +161,6 @@
     </main>
 
     <script src="./node_modules/blockly/blockly.min.js"></script>
-    <script type="module" src="./src/main.js?v=m7-physics-contract"></script>
+    <script type="module" src="./src/main.js?v=m8-vector-contract"></script>
   </body>
 </html>

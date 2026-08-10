@@ -4,22 +4,25 @@ import {
   targetRenderModel,
 } from './playground.js';
 import { createMissionRuntime } from './mission-runtime.js';
-import { MOTION_FUNDAMENTALS_MISSION } from './motion-fundamentals-mission.js';
+import { VELOCITY_DIRECTION_MISSION } from './velocity-direction-mission.js';
 import { createSensorRuntime } from './sensor-runtime.js?v=m5-spec-contract';
 import { createPhysicsRuntime } from './physics-runtime.js?v=m7-physics-contract';
-import { createBlocklyWorkspace } from './blockly-blocks.js?v=m7-physics-contract';
+import { createVectorRuntime } from './vector-runtime.js?v=m8-vector-contract';
+import { velocityArrowRenderModel } from './vector-motion.js?v=m8-vector-contract';
+import { createBlocklyWorkspace } from './blockly-blocks.js?v=m8-vector-contract';
 import {
   createBlocklyProgramController,
   ProgramCompileError,
-} from './blockly-program.js?v=m7-physics-contract';
+} from './blockly-program.js?v=m8-vector-contract';
 
 const simulationPlayground = createPlayground();
 const missionPlayground = createMissionRuntime(
-  MOTION_FUNDAMENTALS_MISSION,
+  VELOCITY_DIRECTION_MISSION,
   simulationPlayground,
 );
 const sensorPlayground = createSensorRuntime(missionPlayground);
-const playground = createPhysicsRuntime(sensorPlayground);
+const physicsPlayground = createPhysicsRuntime(sensorPlayground);
+const playground = createVectorRuntime(physicsPlayground);
 const blocklyWorkspace = createBlocklyWorkspace(
   globalThis.Blockly,
   document.querySelector('#blockly-workspace'),
@@ -29,6 +32,7 @@ const programController = createBlocklyProgramController(blocklyWorkspace, playg
 const elements = {
   world: document.querySelector('#world'),
   robot: document.querySelector('#robot'),
+  velocityArrow: document.querySelector('#velocity-arrow'),
   target: document.querySelector('#target'),
   obstacle: document.querySelector('#obstacle'),
   x: document.querySelector('#state-x'),
@@ -57,21 +61,30 @@ const elements = {
   physicsEquation: document.querySelector('#physics-equation'),
   physicsValues: document.querySelector('#physics-values'),
   physicsExplanation: document.querySelector('#physics-explanation'),
+  vectorHeading: document.querySelector('#vector-heading'),
+  vectorVx: document.querySelector('#vector-vx'),
+  vectorVy: document.querySelector('#vector-vy'),
+  vectorDx: document.querySelector('#vector-dx'),
+  vectorDy: document.querySelector('#vector-dy'),
+  vectorTotalDistance: document.querySelector('#vector-total-distance'),
+  vectorNetDisplacement: document.querySelector('#vector-net-displacement'),
 };
 
-elements.missionTitle.textContent = MOTION_FUNDAMENTALS_MISSION.title;
-elements.missionDescription.textContent = MOTION_FUNDAMENTALS_MISSION.description;
-elements.missionTarget.textContent = `(${MOTION_FUNDAMENTALS_MISSION.target.x}, ${MOTION_FUNDAMENTALS_MISSION.target.y})`;
-elements.missionRadius.textContent = String(MOTION_FUNDAMENTALS_MISSION.successRadius);
+elements.missionTitle.textContent = VELOCITY_DIRECTION_MISSION.title;
+elements.missionDescription.textContent = VELOCITY_DIRECTION_MISSION.description;
+elements.missionTarget.textContent = `(${VELOCITY_DIRECTION_MISSION.target.x}, ${VELOCITY_DIRECTION_MISSION.target.y})`;
+elements.missionRadius.textContent = String(VELOCITY_DIRECTION_MISSION.successRadius);
 
 function render(state) {
   const robot = robotRenderModel(state);
   const target = targetRenderModel(state);
+  const velocityArrow = velocityArrowRenderModel(state);
   const obstacle = state.obstacles[0];
 
   elements.world.style.width = `${state.world.width}px`;
   elements.world.style.height = `${state.world.height}px`;
   Object.assign(elements.robot.style, robot);
+  Object.assign(elements.velocityArrow.style, velocityArrow);
   Object.assign(elements.target.style, target);
   Object.assign(elements.obstacle.style, {
     left: `${obstacle.x}px`,
@@ -97,6 +110,7 @@ function render(state) {
   elements.missionPanel.dataset.status = state.mission.status;
   elements.target.classList.toggle('reached', state.mission.status === 'SUCCESS');
   renderPhysics(state.physics);
+  renderVector(state.vector);
 
   elements.eventLog.replaceChildren();
 
@@ -115,6 +129,20 @@ function render(state) {
   }
 
   elements.eventLog.scrollTop = elements.eventLog.scrollHeight;
+}
+
+function renderVector(vector) {
+  elements.vectorHeading.textContent = `${formatNumber(vector.headingDegrees)}°`;
+  elements.vectorVx.textContent = `${formatNumber(vector.velocity.x)} units/s`;
+  elements.vectorVy.textContent = `${formatNumber(vector.velocity.y)} units/s`;
+  elements.vectorDx.textContent = vector.lastMovement
+    ? `${formatNumber(vector.lastMovement.dx)} units`
+    : '—';
+  elements.vectorDy.textContent = vector.lastMovement
+    ? `${formatNumber(vector.lastMovement.dy)} units`
+    : '—';
+  elements.vectorTotalDistance.textContent = `${formatNumber(vector.runSummary.totalDistanceTraveled)} units`;
+  elements.vectorNetDisplacement.textContent = `${formatNumber(vector.runSummary.netDisplacement)} units`;
 }
 
 function renderPhysics(physics) {
@@ -188,6 +216,15 @@ elements.runProgram.addEventListener('click', async () => {
           ? `Speed set · ${formatNumber(step.speed)} units/s`
           : `Physics · ${formatNumber(step.calculation.distance)} = ${formatNumber(step.calculation.speed)} × ${formatNumber(step.calculation.time)}`;
         showProgramMessage(message, false);
+      },
+      onVector(state, step) {
+        render(state);
+        if (step.operation === 'SET_HEADING') {
+          showProgramMessage(
+            `Heading set · ${formatNumber(step.headingDegrees)}° through TURN`,
+            false,
+          );
+        }
       },
     });
     render(result.state);
