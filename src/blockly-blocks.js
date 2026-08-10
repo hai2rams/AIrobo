@@ -1,4 +1,4 @@
-import { BLOCK_TYPES } from './blockly-program.js?v=m6-repeat-contract';
+import { BLOCK_TYPES } from './blockly-program.js?v=m7-physics-contract';
 
 export const ROBOT_TOOLBOX = Object.freeze({
   kind: 'flyoutToolbox',
@@ -7,6 +7,8 @@ export const ROBOT_TOOLBOX = Object.freeze({
     { kind: 'block', type: BLOCK_TYPES.MOVE_FORWARD },
     { kind: 'block', type: BLOCK_TYPES.TURN_LEFT },
     { kind: 'block', type: BLOCK_TYPES.TURN_RIGHT },
+    { kind: 'block', type: BLOCK_TYPES.SET_SPEED },
+    { kind: 'block', type: BLOCK_TYPES.MOVE_FOR_TIME },
     { kind: 'block', type: BLOCK_TYPES.REPEAT },
     { kind: 'block', type: BLOCK_TYPES.IF_ELSE },
     { kind: 'block', type: BLOCK_TYPES.FRONT_DISTANCE },
@@ -33,42 +35,12 @@ export const ACCEPTANCE_PROGRAM = Object.freeze({
         y: 35,
         next: {
           block: {
-            type: BLOCK_TYPES.REPEAT,
-            fields: { COUNT: 4 },
-            inputs: {
-              BODY: {
-                block: {
-                  type: BLOCK_TYPES.IF_ELSE,
-                  inputs: {
-                    CONDITION: {
-                      block: {
-                        type: BLOCK_TYPES.LOGIC_COMPARE,
-                        fields: { OP: 'LT' },
-                        inputs: {
-                          A: { block: { type: BLOCK_TYPES.FRONT_DISTANCE } },
-                          B: {
-                            shadow: {
-                              type: BLOCK_TYPES.NUMBER,
-                              fields: { NUM: 50 },
-                            },
-                          },
-                        },
-                      },
-                    },
-                    DO: {
-                      block: {
-                        type: BLOCK_TYPES.TURN_LEFT,
-                        fields: { ANGLE: 90 },
-                      },
-                    },
-                    ELSE: {
-                      block: {
-                        type: BLOCK_TYPES.MOVE_FORWARD,
-                        fields: { DISTANCE: 25 },
-                      },
-                    },
-                  },
-                },
+            type: BLOCK_TYPES.SET_SPEED,
+            fields: { SPEED: 40 },
+            next: {
+              block: {
+                type: BLOCK_TYPES.MOVE_FOR_TIME,
+                fields: { DURATION: 5 },
               },
             },
           },
@@ -135,6 +107,36 @@ export function registerRobotBlocks(Blockly) {
       nextStatement: null,
       colour: 15,
       tooltip: 'Turn clockwise by the entered angle.',
+    },
+    {
+      type: BLOCK_TYPES.SET_SPEED,
+      message0: 'set speed %1 units/s',
+      args0: [
+        {
+          type: 'field_number',
+          name: 'SPEED',
+          value: 20,
+        },
+      ],
+      previousStatement: null,
+      nextStatement: null,
+      colour: 285,
+      tooltip: 'Set the speed used by physics motion blocks.',
+    },
+    {
+      type: BLOCK_TYPES.MOVE_FOR_TIME,
+      message0: 'move for %1 seconds',
+      args0: [
+        {
+          type: 'field_number',
+          name: 'DURATION',
+          value: 5,
+        },
+      ],
+      previousStatement: null,
+      nextStatement: null,
+      colour: 285,
+      tooltip: 'Move using distance = speed × time.',
     },
     {
       type: BLOCK_TYPES.REPEAT,

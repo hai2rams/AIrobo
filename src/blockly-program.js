@@ -1,4 +1,8 @@
 import { SENSOR_TYPES } from './front-distance-sensor.js';
+import {
+  MAX_MOVE_DURATION,
+  MAX_PHYSICS_SPEED,
+} from './physics-motion.js';
 
 export const BLOCK_TYPES = Object.freeze({
   WHEN_START: 'when_start',
@@ -8,6 +12,8 @@ export const BLOCK_TYPES = Object.freeze({
   FRONT_DISTANCE: 'front_distance',
   IF_ELSE: 'if_else',
   REPEAT: 'repeat_times',
+  SET_SPEED: 'set_speed',
+  MOVE_FOR_TIME: 'move_for_time',
   LOGIC_COMPARE: 'logic_compare',
   NUMBER: 'math_number',
 });
@@ -135,6 +141,7 @@ export function createBlocklyProgramController(workspace, playground) {
       onStep = () => {},
       onSensor = () => {},
       onLoop = () => {},
+      onPhysics = () => {},
     } = {}) {
       assertNotRunning();
       const program = compileWorkspaceProgram(workspace);
@@ -159,6 +166,7 @@ export function createBlocklyProgramController(workspace, playground) {
           onStep,
           onSensor,
           onLoop,
+          onPhysics,
           fixedTotal,
         });
       } finally {
@@ -204,6 +212,28 @@ function compileSequence(firstBlock) {
         block,
         count: readRepeatCount(block),
         body: compileSequence(block.getInputTargetBlock?.('BODY')),
+      });
+    } else if (block.type === BLOCK_TYPES.SET_SPEED) {
+      nodes.push({
+        kind: 'SET_SPEED',
+        block,
+        speed: readPhysicsValue(
+          block,
+          'SPEED',
+          'Speed',
+          MAX_PHYSICS_SPEED,
+        ),
+      });
+    } else if (block.type === BLOCK_TYPES.MOVE_FOR_TIME) {
+      nodes.push({
+        kind: 'MOVE_FOR_TIME',
+        block,
+        duration: readPhysicsValue(
+          block,
+          'DURATION',
+          'Move duration',
+          MAX_MOVE_DURATION,
+        ),
       });
     } else {
       nodes.push({ kind: 'ACTION', block, action: actionFromBlock(block) });
@@ -267,6 +297,20 @@ function executeProgram(nodes, context) {
       continue;
     }
 
+    if (node.kind === 'SET_SPEED') {
+      context.budget.consume('set speed');
+      setPhysicsSpeedResult(context.playground, node.speed);
+      continue;
+    }
+
+    if (node.kind === 'MOVE_FOR_TIME') {
+      context.budget.consume('physics calculation');
+      context.budget.consume('robot action');
+      const result = moveForTimeResult(context.playground, node.duration);
+      context.actions.push(result.action);
+      continue;
+    }
+
     if (node.kind === 'IF_ELSE') {
       context.budget.consume('IF condition');
       const branch = evaluateCondition(node.condition, context)
@@ -298,6 +342,42 @@ async function executeProgramSequentially(nodes, context) {
       context.onStep(state, {
         action: node.action,
         block: node.block,
+        index,
+        total: context.fixedTotal,
+      });
+      await context.wait(context.delayMs);
+      context.assertActive();
+      continue;
+    }
+
+    if (node.kind === 'SET_SPEED') {
+      context.budget.consume('set speed');
+      context.workspace.highlightBlock?.(node.block.id);
+      state = setPhysicsSpeedResult(context.playground, node.speed);
+      context.onPhysics(state, {
+        operation: 'SET_SPEED',
+        block: node.block,
+        speed: node.speed,
+      });
+      await context.wait(context.delayMs);
+      context.assertActive();
+      continue;
+    }
+
+    if (node.kind === 'MOVE_FOR_TIME') {
+      context.budget.consume('physics calculation');
+      context.budget.consume('robot action');
+      context.workspace.highlightBlock?.(node.block.id);
+      const result = moveForTimeResult(context.playground, node.duration);
+      state = result.state;
+      const index = context.actions.length;
+      context.actions.push(result.action);
+      context.onPhysics(state, {
+        operation: 'MOVE_FOR_TIME',
+        block: node.block,
+        duration: node.duration,
+        action: result.action,
+        calculation: result.calculation,
         index,
         total: context.fixedTotal,
       });
@@ -451,6 +531,49 @@ function readRepeatCount(block) {
   }
 
   return count;
+}
+
+function readPhysicsValue(block, fieldName, label, maximum) {
+  const rawValue = block.getFieldValue(fieldName);
+  const value = Number(rawValue);
+
+  if (
+    rawValue === null
+    || rawValue === ''
+    || !Number.isFinite(value)
+    || value < 0
+    || value > maximum
+  ) {
+    throw new ProgramCompileError(
+      `${label} must be a finite number from 0 to ${maximum}.`,
+    );
+  }
+
+  return value;
+}
+
+function setPhysicsSpeedResult(playground, speed) {
+  if (typeof playground.setPhysicsSpeed !== 'function') {
+    throw new ProgramCompileError('This program requires the physics learning runtime.');
+  }
+
+  try {
+    return playground.setPhysicsSpeed(speed);
+  } catch (error) {
+    throw new ProgramCompileError(error.message);
+  }
+}
+
+function moveForTimeResult(playground, duration) {
+  if (typeof playground.moveForTime !== 'function') {
+    throw new ProgramCompileError('This program requires the physics learning runtime.');
+  }
+
+  try {
+    return playground.moveForTime(duration);
+  } catch (error) {
+    throw new ProgramCompileError(error.message);
+  }
 }
 
 function createExecutionContext(playground, actions, isActive) {

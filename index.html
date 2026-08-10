@@ -19,7 +19,7 @@
     <main class="app-shell">
       <header class="app-header">
         <div>
-          <p class="eyebrow">M6 · Deterministic repeat loops</p>
+          <p class="eyebrow">M7 · Physics motion fundamentals</p>
           <h1>Visual Playground</h1>
           <p class="subtitle">Guide one robot through a deterministic 2D world.</p>
         </div>
@@ -30,17 +30,17 @@
         <div class="panel-heading">
           <div>
             <p class="panel-kicker">Active mission</p>
-            <h2 id="mission-title">Reach the Target</h2>
+            <h2 id="mission-title">Speed × Time</h2>
           </div>
           <span id="mission-status" class="mission-status">Ready</span>
         </div>
-        <p id="mission-description" class="mission-description">Program the robot to reach the target.</p>
+        <p id="mission-description" class="mission-description">Use speed and time to move the robot to the target.</p>
         <dl class="mission-metrics" aria-live="polite">
-          <div><dt>Distance</dt><dd id="mission-distance">400</dd></div>
+          <div><dt>Distance</dt><dd id="mission-distance">200</dd></div>
           <div><dt>Attempts</dt><dd id="mission-attempts">0</dd></div>
           <div><dt>Radius</dt><dd id="mission-radius">15</dd></div>
         </dl>
-        <p class="mission-target">Target: <span id="mission-target">(500, 200)</span></p>
+        <p class="mission-target">Target: <span id="mission-target">(300, 200)</span></p>
         <p id="mission-feedback" class="mission-feedback">Run your Blockly program to begin the mission.</p>
       </section>
 
@@ -63,7 +63,7 @@
           <div class="world-frame">
             <div id="world" class="world" aria-label="600 by 400 robot world">
               <div id="obstacle" class="obstacle" aria-label="Wall obstacle"></div>
-              <div id="target" class="target" aria-label="Target at x 500, y 200">
+              <div id="target" class="target" aria-label="Target at x 300, y 200">
                 <span class="target-ring"></span>
                 <span class="target-core"></span>
               </div>
@@ -112,6 +112,23 @@
           </dl>
         </section>
 
+        <section class="panel physics-panel" aria-labelledby="physics-title">
+          <div class="panel-heading">
+            <div>
+              <p class="panel-kicker">Motion fundamentals</p>
+              <h2 id="physics-title">Physics</h2>
+            </div>
+          </div>
+          <dl class="physics-grid" aria-live="polite">
+            <div><dt>Speed</dt><dd id="physics-speed">0 units/s</dd></div>
+            <div><dt>Time</dt><dd id="physics-time">—</dd></div>
+            <div><dt>Distance</dt><dd id="physics-distance">—</dd></div>
+          </dl>
+          <p id="physics-equation" class="physics-equation">distance = speed × time</p>
+          <p id="physics-values" class="physics-values">Run a move-for-time block to calculate motion.</p>
+          <p id="physics-explanation" class="physics-explanation">Set a speed, then choose how long the robot should move.</p>
+        </section>
+
         <section class="panel event-panel" aria-labelledby="events-title">
           <div class="panel-heading">
             <div>
@@ -128,6 +145,6 @@
     </main>
 
     <script src="./node_modules/blockly/blockly.min.js"></script>
-    <script type="module" src="./src/main.js?v=m6-repeat-contract"></script>
+    <script type="module" src="./src/main.js?v=m7-physics-contract"></script>
   </body>
 </html>

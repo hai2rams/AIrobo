@@ -4,17 +4,22 @@ import {
   targetRenderModel,
 } from './playground.js';
 import { createMissionRuntime } from './mission-runtime.js';
-import { REACH_TARGET_MISSION } from './reach-target-mission.js';
+import { MOTION_FUNDAMENTALS_MISSION } from './motion-fundamentals-mission.js';
 import { createSensorRuntime } from './sensor-runtime.js?v=m5-spec-contract';
-import { createBlocklyWorkspace } from './blockly-blocks.js?v=m6-repeat-contract';
+import { createPhysicsRuntime } from './physics-runtime.js?v=m7-physics-contract';
+import { createBlocklyWorkspace } from './blockly-blocks.js?v=m7-physics-contract';
 import {
   createBlocklyProgramController,
   ProgramCompileError,
-} from './blockly-program.js?v=m6-repeat-contract';
+} from './blockly-program.js?v=m7-physics-contract';
 
 const simulationPlayground = createPlayground();
-const missionPlayground = createMissionRuntime(REACH_TARGET_MISSION, simulationPlayground);
-const playground = createSensorRuntime(missionPlayground);
+const missionPlayground = createMissionRuntime(
+  MOTION_FUNDAMENTALS_MISSION,
+  simulationPlayground,
+);
+const sensorPlayground = createSensorRuntime(missionPlayground);
+const playground = createPhysicsRuntime(sensorPlayground);
 const blocklyWorkspace = createBlocklyWorkspace(
   globalThis.Blockly,
   document.querySelector('#blockly-workspace'),
@@ -46,12 +51,18 @@ const elements = {
   missionDescription: document.querySelector('#mission-description'),
   missionTarget: document.querySelector('#mission-target'),
   missionRadius: document.querySelector('#mission-radius'),
+  physicsSpeed: document.querySelector('#physics-speed'),
+  physicsTime: document.querySelector('#physics-time'),
+  physicsDistance: document.querySelector('#physics-distance'),
+  physicsEquation: document.querySelector('#physics-equation'),
+  physicsValues: document.querySelector('#physics-values'),
+  physicsExplanation: document.querySelector('#physics-explanation'),
 };
 
-elements.missionTitle.textContent = REACH_TARGET_MISSION.title;
-elements.missionDescription.textContent = REACH_TARGET_MISSION.description;
-elements.missionTarget.textContent = `(${REACH_TARGET_MISSION.target.x}, ${REACH_TARGET_MISSION.target.y})`;
-elements.missionRadius.textContent = String(REACH_TARGET_MISSION.successRadius);
+elements.missionTitle.textContent = MOTION_FUNDAMENTALS_MISSION.title;
+elements.missionDescription.textContent = MOTION_FUNDAMENTALS_MISSION.description;
+elements.missionTarget.textContent = `(${MOTION_FUNDAMENTALS_MISSION.target.x}, ${MOTION_FUNDAMENTALS_MISSION.target.y})`;
+elements.missionRadius.textContent = String(MOTION_FUNDAMENTALS_MISSION.successRadius);
 
 function render(state) {
   const robot = robotRenderModel(state);
@@ -72,7 +83,7 @@ function render(state) {
   elements.x.textContent = formatNumber(state.robot.x);
   elements.y.textContent = formatNumber(state.robot.y);
   elements.heading.textContent = `${formatNumber(state.robot.heading)}°`;
-  elements.speed.textContent = formatNumber(state.robot.speed);
+  elements.speed.textContent = formatNumber(state.physics.speed);
   elements.step.textContent = String(state.step);
   elements.time.textContent = String(state.time);
   elements.frontDistance.textContent = formatSensorDistance(
@@ -85,6 +96,7 @@ function render(state) {
   elements.missionFeedback.textContent = missionFeedback(state.mission.status);
   elements.missionPanel.dataset.status = state.mission.status;
   elements.target.classList.toggle('reached', state.mission.status === 'SUCCESS');
+  renderPhysics(state.physics);
 
   elements.eventLog.replaceChildren();
 
@@ -103,6 +115,26 @@ function render(state) {
   }
 
   elements.eventLog.scrollTop = elements.eventLog.scrollHeight;
+}
+
+function renderPhysics(physics) {
+  elements.physicsSpeed.textContent = `${formatNumber(physics.speed)} units/s`;
+
+  if (!physics.lastCalculation) {
+    elements.physicsTime.textContent = '—';
+    elements.physicsDistance.textContent = '—';
+    elements.physicsEquation.textContent = 'distance = speed × time';
+    elements.physicsValues.textContent = 'Run a move-for-time block to calculate motion.';
+    elements.physicsExplanation.textContent = 'Set a speed, then choose how long the robot should move.';
+    return;
+  }
+
+  const calculation = physics.lastCalculation;
+  elements.physicsTime.textContent = `${formatNumber(calculation.time)} s`;
+  elements.physicsDistance.textContent = `${formatNumber(calculation.distance)} units`;
+  elements.physicsEquation.textContent = calculation.equation;
+  elements.physicsValues.textContent = `${formatNumber(calculation.distance)} = ${formatNumber(calculation.speed)} × ${formatNumber(calculation.time)}`;
+  elements.physicsExplanation.textContent = `The robot moved ${formatNumber(calculation.distance)} units because speed × time is ${formatNumber(calculation.speed)} × ${formatNumber(calculation.time)}.`;
 }
 
 function formatNumber(value) {
@@ -149,6 +181,13 @@ elements.runProgram.addEventListener('click', async () => {
       onLoop(state, step) {
         render(state);
         showProgramMessage(`Repeat ${step.iteration} of ${step.total}`, false);
+      },
+      onPhysics(state, step) {
+        render(state);
+        const message = step.operation === 'SET_SPEED'
+          ? `Speed set · ${formatNumber(step.speed)} units/s`
+          : `Physics · ${formatNumber(step.calculation.distance)} = ${formatNumber(step.calculation.speed)} × ${formatNumber(step.calculation.time)}`;
+        showProgramMessage(message, false);
       },
     });
     render(result.state);

@@ -593,14 +593,66 @@ h1 {
 
 .inspector-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1.15fr) minmax(280px, 0.85fr) minmax(0, 1fr);
   gap: 18px;
   align-items: start;
   margin-top: 18px;
 }
 
 .inspector-row .state-grid {
-  grid-template-columns: repeat(7, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.physics-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1px;
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid #222c3d;
+  border-radius: 10px;
+  background: #222c3d;
+}
+
+.physics-grid div {
+  min-width: 0;
+  padding: 12px 8px;
+  background: #111827;
+}
+
+.physics-grid dt {
+  margin-bottom: 5px;
+  color: #778398;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.physics-grid dd,
+.physics-values {
+  margin: 0;
+  color: #dce7ff;
+  font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
+  font-size: 0.78rem;
+}
+
+.physics-equation {
+  margin: 14px 0 4px;
+  color: #8ff7df;
+  font-weight: 800;
+}
+
+.physics-values {
+  color: #b9ccff;
+}
+
+.physics-explanation {
+  min-height: 36px;
+  margin: 10px 0 0;
+  color: #8995a9;
+  font-size: 0.74rem;
+  line-height: 1.45;
 }
 
 .inspector-row .event-log {
@@ -609,6 +661,7 @@ h1 {
 
 @media (max-width: 1000px) {
   .main-workspace { grid-template-columns: 1fr; }
+  .inspector-row { grid-template-columns: 1fr; }
 
   .mission-panel {
     grid-template-areas:
