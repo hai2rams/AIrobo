@@ -33,6 +33,25 @@ export function actionForControl(control) {
 export function createPlayground(simulationKernel = simulate) {
   let state = createInitialState();
 
+  function executeAction(action) {
+    const result = simulationKernel(
+      {
+        x: state.robot.x,
+        y: state.robot.y,
+        heading: state.robot.heading,
+      },
+      action,
+    );
+
+    state = {
+      ...state,
+      robot: { ...result.worldState, speed: 0 },
+      step: state.step + 1,
+      time: state.time + 1,
+      events: [...state.events, ...result.events],
+    };
+  }
+
   return {
     getState() {
       return state;
@@ -45,22 +64,15 @@ export function createPlayground(simulationKernel = simulate) {
       }
 
       const action = actionForControl(control);
-      const result = simulationKernel(
-        {
-          x: state.robot.x,
-          y: state.robot.y,
-          heading: state.robot.heading,
-        },
-        action,
-      );
+      executeAction(action);
 
-      state = {
-        ...state,
-        robot: { ...result.worldState, speed: 0 },
-        step: state.step + 1,
-        time: state.time + 1,
-        events: [...state.events, ...result.events],
-      };
+      return state;
+    },
+
+    executeActions(actions) {
+      for (const action of actions) {
+        executeAction(action);
+      }
 
       return state;
     },

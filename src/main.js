@@ -3,8 +3,18 @@ import {
   robotRenderModel,
   targetRenderModel,
 } from './playground.js';
+import { createBlocklyWorkspace } from './blockly-blocks.js';
+import {
+  createBlocklyProgramController,
+  ProgramCompileError,
+} from './blockly-program.js';
 
 const playground = createPlayground();
+const blocklyWorkspace = createBlocklyWorkspace(
+  globalThis.Blockly,
+  document.querySelector('#blockly-workspace'),
+);
+const programController = createBlocklyProgramController(blocklyWorkspace, playground);
 
 const elements = {
   world: document.querySelector('#world'),
@@ -18,6 +28,8 @@ const elements = {
   time: document.querySelector('#state-time'),
   eventLog: document.querySelector('#event-log'),
   eventCount: document.querySelector('#event-count'),
+  programMessage: document.querySelector('#program-message'),
+  runProgram: document.querySelector('#run-program'),
 };
 
 function render(state) {
@@ -62,8 +74,49 @@ function formatNumber(value) {
 
 for (const button of document.querySelectorAll('[data-control]')) {
   button.addEventListener('click', () => {
-    render(playground.execute(button.dataset.control));
+    const state = button.dataset.control === 'RESET'
+      ? programController.resetRobot()
+      : playground.execute(button.dataset.control);
+
+    render(state);
   });
+}
+
+elements.runProgram.addEventListener('click', async () => {
+  elements.runProgram.disabled = true;
+  elements.runProgram.textContent = 'Running…';
+
+  try {
+    const result = await programController.runSequentially({
+      onStep(state, step) {
+        render(state);
+        showProgramMessage(
+          `Running action ${step.index + 1} of ${step.total} · ${step.block.toString()}`,
+          false,
+        );
+      },
+    });
+    showProgramMessage(`Program complete · ${result.actions.length} actions.`, false);
+  } catch (error) {
+    if (!(error instanceof ProgramCompileError)) {
+      throw error;
+    }
+
+    showProgramMessage(error.message, true);
+  } finally {
+    elements.runProgram.disabled = false;
+    elements.runProgram.textContent = '▶ Run Program';
+  }
+});
+
+document.querySelector('#clear-workspace').addEventListener('click', () => {
+  programController.clearWorkspace();
+  showProgramMessage('Workspace cleared. Robot state was not changed.', false);
+});
+
+function showProgramMessage(message, isError) {
+  elements.programMessage.textContent = message;
+  elements.programMessage.classList.toggle('error', isError);
 }
 
 render(playground.getState());

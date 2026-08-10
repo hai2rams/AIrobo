@@ -2,6 +2,11 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <script>
+      if (window.location.protocol === 'file:') {
+        window.location.replace('http://127.0.0.1:4173/');
+      }
+    </script>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
@@ -14,7 +19,7 @@
     <main class="app-shell">
       <header class="app-header">
         <div>
-          <p class="eyebrow">M2 · Simulation workspace</p>
+          <p class="eyebrow">M3 · Block programming workspace</p>
           <h1>Visual Playground</h1>
           <p class="subtitle">Guide one robot through a deterministic 2D world.</p>
         </div>
@@ -36,7 +41,8 @@
             </div>
           </div>
 
-          <div class="controls" aria-label="Robot controls">
+          <div class="control-label">Debug controls</div>
+          <div class="controls" aria-label="Robot debug controls">
             <button type="button" data-control="TURN_LEFT" aria-label="Turn left 15 degrees">
               <span aria-hidden="true">↶</span> Turn Left
             </button>
@@ -85,8 +91,25 @@
           </section>
         </aside>
       </section>
+
+      <section class="program-panel panel" aria-labelledby="program-title">
+        <div class="program-header">
+          <div>
+            <p class="panel-kicker">Visual program</p>
+            <h2 id="program-title">Blockly Workspace</h2>
+            <p class="program-help">Connect commands below When Start, then run them through the simulation kernel.</p>
+          </div>
+          <div class="program-actions">
+            <button id="clear-workspace" type="button" class="secondary-action">Clear Workspace</button>
+            <button id="run-program" type="button" class="run-action">▶ Run Program</button>
+          </div>
+        </div>
+        <div id="blockly-workspace" class="blockly-workspace" aria-label="Blockly robot program workspace"></div>
+        <p id="program-message" class="program-message" aria-live="polite">Ready to run the connected program.</p>
+      </section>
     </main>
 
+    <script src="./node_modules/blockly/blockly.min.js"></script>
     <script type="module" src="./src/main.js"></script>
   </body>
 </html>

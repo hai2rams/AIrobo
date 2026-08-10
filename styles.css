@@ -206,7 +206,16 @@ h1 {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   gap: 10px;
+  margin-top: 8px;
+}
+
+.control-label {
   margin-top: 16px;
+  color: #778398;
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 
 .controls button {
@@ -355,6 +364,95 @@ h1 {
   line-height: 1.55;
 }
 
+.program-panel {
+  margin-top: 18px;
+}
+
+.program-header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 24px;
+  margin-bottom: 16px;
+}
+
+.program-help {
+  max-width: 600px;
+  margin: 8px 0 0;
+  color: #8490a4;
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+.program-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.program-actions button {
+  min-height: 42px;
+  padding: 0 16px;
+  border: 1px solid #303a4e;
+  border-radius: 9px;
+  color: #dce4f2;
+  background: #161d2b;
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.program-actions button:hover {
+  border-color: #52698f;
+  background: #1c2638;
+}
+
+.program-actions button:disabled {
+  border-color: #394256;
+  color: #8994a8;
+  background: #202737;
+  cursor: not-allowed;
+}
+
+.program-actions button:focus-visible {
+  outline: 3px solid rgba(125, 164, 255, 0.38);
+  outline-offset: 2px;
+}
+
+.program-actions .run-action {
+  border-color: #5478d5;
+  color: #fff;
+  background: #4169ce;
+}
+
+.blockly-workspace {
+  width: 100%;
+  height: 340px;
+  overflow: hidden;
+  border: 1px solid #2a3447;
+  border-radius: 12px;
+}
+
+.blockly-workspace .blocklyMainBackground {
+  stroke: none;
+}
+
+.blockly-workspace .blocklyHighlighted > .blocklyPath {
+  stroke: #f8fafc;
+  stroke-width: 4px;
+  filter: drop-shadow(0 0 7px rgba(125, 164, 255, 0.95));
+}
+
+.program-message {
+  min-height: 20px;
+  margin: 12px 2px 0;
+  color: #86d9c3;
+  font-size: 0.78rem;
+}
+
+.program-message.error {
+  color: #fda4af;
+}
+
 @media (max-width: 920px) {
   .workspace { grid-template-columns: 1fr; }
   .side-panel { grid-template-columns: repeat(2, 1fr); }
@@ -365,6 +463,9 @@ h1 {
   .app-header { align-items: flex-start; flex-direction: column; }
   .side-panel { grid-template-columns: 1fr; }
   .controls { grid-template-columns: repeat(2, 1fr); }
+  .program-header { align-items: flex-start; flex-direction: column; }
+  .program-actions { width: 100%; }
+  .program-actions button { flex: 1; }
 }
 
 @media (prefers-reduced-motion: reduce) {
