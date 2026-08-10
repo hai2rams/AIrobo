@@ -256,7 +256,12 @@ async function executeProgramSequentially(nodes, context) {
       continue;
     }
 
-    const conditionResult = await evaluateConditionSequentially(node.condition, context);
+    context.workspace.highlightBlock?.(node.block.id);
+    const conditionResult = await evaluateConditionSequentially(
+      node.condition,
+      context,
+      node.block,
+    );
     const branch = conditionResult ? node.thenBranch : node.elseBranch;
     state = await executeProgramSequentially(branch, context);
   }
@@ -270,9 +275,17 @@ function evaluateCondition(condition, playground) {
   return compareNumbers(left, condition.operator, right);
 }
 
-async function evaluateConditionSequentially(condition, context) {
-  const left = await readNumberExpressionSequentially(condition.left, context);
-  const right = await readNumberExpressionSequentially(condition.right, context);
+async function evaluateConditionSequentially(condition, context, conditionBlock) {
+  const left = await readNumberExpressionSequentially(
+    condition.left,
+    context,
+    conditionBlock,
+  );
+  const right = await readNumberExpressionSequentially(
+    condition.right,
+    context,
+    conditionBlock,
+  );
   return compareNumbers(left, condition.operator, right);
 }
 
@@ -281,29 +294,48 @@ function readNumberExpression(expression, playground) {
     return expression.value;
   }
 
-  const result = playground.readSensor?.(expression.sensorType);
-  if (!result) {
-    throw new ProgramCompileError('This program requires the front-distance sensor runtime.');
-  }
-  return result.reading.distance;
+  return readSensorResult(playground, expression.sensorType).reading.value;
 }
 
-async function readNumberExpressionSequentially(expression, context) {
+async function readNumberExpressionSequentially(expression, context, conditionBlock) {
   if (expression.kind === 'NUMBER') {
     return expression.value;
   }
 
-  context.workspace.highlightBlock?.(expression.block.id);
-  const result = context.playground.readSensor?.(expression.sensorType);
-  if (!result) {
-    throw new ProgramCompileError('This program requires the front-distance sensor runtime.');
-  }
+  const result = readSensorResult(context.playground, expression.sensorType);
   context.onSensor(result.state, {
-    block: expression.block,
+    block: conditionBlock,
     reading: result.reading,
   });
   await context.wait(context.delayMs);
-  return result.reading.distance;
+  return result.reading.value;
+}
+
+function readSensorResult(playground, sensorType) {
+  let result;
+
+  try {
+    result = playground.readSensor?.(sensorType);
+  } catch {
+    throw new ProgramCompileError(
+      'The front distance sensor could not produce a valid finite value.',
+    );
+  }
+
+  if (!result) {
+    throw new ProgramCompileError('This program requires the front-distance sensor runtime.');
+  }
+
+  if (
+    result.reading?.sensor !== SENSOR_TYPES.FRONT_DISTANCE
+    || !Number.isFinite(result.reading.value)
+  ) {
+    throw new ProgramCompileError(
+      'The front distance sensor could not produce a valid finite value.',
+    );
+  }
+
+  return result;
 }
 
 function compareNumbers(left, operator, right) {

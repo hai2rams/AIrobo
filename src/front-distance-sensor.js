@@ -3,6 +3,7 @@ export const SENSOR_TYPES = Object.freeze({
 });
 
 export const MAX_SENSOR_RANGE = 500;
+export const SENSOR_UNIT = 'world-units';
 
 const PARALLEL_EPSILON = 1e-12;
 
@@ -17,7 +18,7 @@ export function readFrontDistance(worldState, obstacles) {
   const radians = worldState.heading * (Math.PI / 180);
   const direction = { x: Math.cos(radians), y: Math.sin(radians) };
   let nearestDistance = MAX_SENSOR_RANGE;
-  let nearestObstacleId = null;
+  let obstacleDetected = false;
 
   for (const obstacle of obstacles) {
     const distance = distanceAlongRay(worldState, direction, obstacle);
@@ -25,35 +26,45 @@ export function readFrontDistance(worldState, obstacles) {
     if (
       distance !== null
       && distance <= MAX_SENSOR_RANGE
-      && (nearestObstacleId === null || distance < nearestDistance)
+      && (!obstacleDetected || distance < nearestDistance)
     ) {
       nearestDistance = distance;
-      nearestObstacleId = obstacle.id;
+      obstacleDetected = true;
     }
   }
 
   return {
-    type: SENSOR_TYPES.FRONT_DISTANCE,
-    distance: nearestDistance,
-    obstacleId: nearestObstacleId,
+    sensor: SENSOR_TYPES.FRONT_DISTANCE,
+    value: nearestDistance,
+    unit: SENSOR_UNIT,
   };
 }
 
-export function sensorReadingEvent(reading) {
+export function sensorReadingEvent(reading, worldState) {
+  assertWorldState(worldState);
+
   if (
     reading === null
     || typeof reading !== 'object'
-    || reading.type !== SENSOR_TYPES.FRONT_DISTANCE
-    || !Number.isFinite(reading.distance)
-    || reading.distance < 0
-    || reading.distance > MAX_SENSOR_RANGE
+    || reading.sensor !== SENSOR_TYPES.FRONT_DISTANCE
+    || reading.unit !== SENSOR_UNIT
+    || !Number.isFinite(reading.value)
+    || reading.value < 0
+    || reading.value > MAX_SENSOR_RANGE
   ) {
     throw new TypeError('A valid front-distance sensor reading is required');
   }
 
   return {
     type: 'SENSOR_READ',
-    reading: { ...reading },
+    sensor: reading.sensor,
+    value: reading.value,
+    unit: reading.unit,
+    robotPosition: {
+      x: worldState.x,
+      y: worldState.y,
+    },
+    heading: worldState.heading,
   };
 }
 

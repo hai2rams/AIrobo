@@ -2,7 +2,7 @@ import {
   readFrontDistance,
   SENSOR_TYPES,
   sensorReadingEvent,
-} from './front-distance-sensor.js';
+} from './front-distance-sensor.js?v=m5-spec-contract';
 import { OBSTACLES } from './world-obstacles.js';
 
 export function createSensorRuntime(
@@ -16,11 +16,13 @@ export function createSensorRuntime(
   }
 
   function decoratedState() {
+    const frontReading = currentFrontReading();
+
     return {
       ...playground.getState(),
       obstacles: obstacles.map((obstacle) => ({ ...obstacle })),
       sensors: {
-        frontDistance: { ...currentFrontReading() },
+        frontDistance: frontReading.value,
       },
       events: [...eventLog],
     };
@@ -55,7 +57,7 @@ export function createSensorRuntime(
       }
 
       const reading = currentFrontReading();
-      eventLog.push(sensorReadingEvent(reading));
+      eventLog.push(sensorReadingEvent(reading, playground.getState().robot));
       return { reading, state: decoratedState() };
     },
 

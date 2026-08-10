@@ -5,12 +5,12 @@ import {
 } from './playground.js';
 import { createMissionRuntime } from './mission-runtime.js';
 import { REACH_TARGET_MISSION } from './reach-target-mission.js';
-import { createSensorRuntime } from './sensor-runtime.js';
+import { createSensorRuntime } from './sensor-runtime.js?v=m5-spec-contract';
 import { createBlocklyWorkspace } from './blockly-blocks.js';
 import {
   createBlocklyProgramController,
   ProgramCompileError,
-} from './blockly-program.js';
+} from './blockly-program.js?v=m5-spec-contract';
 
 const simulationPlayground = createPlayground();
 const missionPlayground = createMissionRuntime(REACH_TARGET_MISSION, simulationPlayground);
@@ -76,7 +76,7 @@ function render(state) {
   elements.step.textContent = String(state.step);
   elements.time.textContent = String(state.time);
   elements.frontDistance.textContent = formatSensorDistance(
-    state.sensors.frontDistance.distance,
+    state.sensors.frontDistance,
   );
   elements.eventCount.textContent = String(state.events.length);
   elements.missionStatus.textContent = missionStatusLabel(state.mission.status);
@@ -142,7 +142,7 @@ elements.runProgram.addEventListener('click', async () => {
       onSensor(state, step) {
         render(state);
         showProgramMessage(
-          `Sensor read · front distance ${formatSensorDistance(step.reading.distance)}`,
+          `Sensor read · front distance ${formatSensorDistance(step.reading.value)}`,
           false,
         );
       },
