@@ -143,6 +143,21 @@ h1 {
   height: 34px;
 }
 
+.obstacle {
+  position: absolute;
+  z-index: 1;
+  transform: translate(-50%, -50%);
+  border: 2px solid #fbbf24;
+  border-radius: 4px;
+  background:
+    repeating-linear-gradient(
+      135deg,
+      rgba(251, 191, 36, 0.82) 0 7px,
+      rgba(146, 64, 14, 0.92) 7px 14px
+    );
+  box-shadow: 0 0 18px rgba(251, 191, 36, 0.25);
+}
+
 .robot-body {
   position: absolute;
   inset: 3px;
@@ -585,7 +600,7 @@ h1 {
 }
 
 .inspector-row .state-grid {
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(7, minmax(0, 1fr));
 }
 
 .inspector-row .event-log {

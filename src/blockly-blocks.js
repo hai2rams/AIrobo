@@ -7,6 +7,18 @@ export const ROBOT_TOOLBOX = Object.freeze({
     { kind: 'block', type: BLOCK_TYPES.MOVE_FORWARD },
     { kind: 'block', type: BLOCK_TYPES.TURN_LEFT },
     { kind: 'block', type: BLOCK_TYPES.TURN_RIGHT },
+    { kind: 'block', type: BLOCK_TYPES.IF_ELSE },
+    { kind: 'block', type: BLOCK_TYPES.FRONT_DISTANCE },
+    {
+      kind: 'block',
+      type: BLOCK_TYPES.LOGIC_COMPARE,
+      fields: { OP: 'LT' },
+    },
+    {
+      kind: 'block',
+      type: BLOCK_TYPES.NUMBER,
+      fields: { NUM: 50 },
+    },
   ],
 });
 
@@ -20,17 +32,33 @@ export const ACCEPTANCE_PROGRAM = Object.freeze({
         y: 35,
         next: {
           block: {
-            type: BLOCK_TYPES.MOVE_FORWARD,
-            fields: { DISTANCE: 25 },
-            next: {
-              block: {
-                type: BLOCK_TYPES.TURN_LEFT,
-                fields: { ANGLE: 15 },
-                next: {
-                  block: {
-                    type: BLOCK_TYPES.MOVE_FORWARD,
-                    fields: { DISTANCE: 25 },
+            type: BLOCK_TYPES.IF_ELSE,
+            inputs: {
+              CONDITION: {
+                block: {
+                  type: BLOCK_TYPES.LOGIC_COMPARE,
+                  fields: { OP: 'LT' },
+                  inputs: {
+                    A: { block: { type: BLOCK_TYPES.FRONT_DISTANCE } },
+                    B: {
+                      shadow: {
+                        type: BLOCK_TYPES.NUMBER,
+                        fields: { NUM: 50 },
+                      },
+                    },
                   },
+                },
+              },
+              DO: {
+                block: {
+                  type: BLOCK_TYPES.TURN_LEFT,
+                  fields: { ANGLE: 90 },
+                },
+              },
+              ELSE: {
+                block: {
+                  type: BLOCK_TYPES.MOVE_FORWARD,
+                  fields: { DISTANCE: 25 },
                 },
               },
             },
@@ -98,6 +126,42 @@ export function registerRobotBlocks(Blockly) {
       nextStatement: null,
       colour: 15,
       tooltip: 'Turn clockwise by the entered angle.',
+    },
+    {
+      type: BLOCK_TYPES.FRONT_DISTANCE,
+      message0: 'front distance',
+      output: 'Number',
+      colour: 265,
+      tooltip: 'Read the distance to the obstacle directly in front of the robot.',
+    },
+    {
+      type: BLOCK_TYPES.IF_ELSE,
+      message0: 'if %1',
+      args0: [
+        {
+          type: 'input_value',
+          name: 'CONDITION',
+          check: 'Boolean',
+        },
+      ],
+      message1: 'do %1',
+      args1: [
+        {
+          type: 'input_statement',
+          name: 'DO',
+        },
+      ],
+      message2: 'else %1',
+      args2: [
+        {
+          type: 'input_statement',
+          name: 'ELSE',
+        },
+      ],
+      previousStatement: null,
+      nextStatement: null,
+      colour: 210,
+      tooltip: 'Run only the branch selected by the condition.',
     },
   ]);
 }

@@ -5,6 +5,7 @@ import {
 } from './playground.js';
 import { createMissionRuntime } from './mission-runtime.js';
 import { REACH_TARGET_MISSION } from './reach-target-mission.js';
+import { createSensorRuntime } from './sensor-runtime.js';
 import { createBlocklyWorkspace } from './blockly-blocks.js';
 import {
   createBlocklyProgramController,
@@ -12,7 +13,8 @@ import {
 } from './blockly-program.js';
 
 const simulationPlayground = createPlayground();
-const playground = createMissionRuntime(REACH_TARGET_MISSION, simulationPlayground);
+const missionPlayground = createMissionRuntime(REACH_TARGET_MISSION, simulationPlayground);
+const playground = createSensorRuntime(missionPlayground);
 const blocklyWorkspace = createBlocklyWorkspace(
   globalThis.Blockly,
   document.querySelector('#blockly-workspace'),
@@ -23,12 +25,14 @@ const elements = {
   world: document.querySelector('#world'),
   robot: document.querySelector('#robot'),
   target: document.querySelector('#target'),
+  obstacle: document.querySelector('#obstacle'),
   x: document.querySelector('#state-x'),
   y: document.querySelector('#state-y'),
   heading: document.querySelector('#state-heading'),
   speed: document.querySelector('#state-speed'),
   step: document.querySelector('#state-step'),
   time: document.querySelector('#state-time'),
+  frontDistance: document.querySelector('#sensor-front-distance'),
   eventLog: document.querySelector('#event-log'),
   eventCount: document.querySelector('#event-count'),
   programMessage: document.querySelector('#program-message'),
@@ -52,11 +56,18 @@ elements.missionRadius.textContent = String(REACH_TARGET_MISSION.successRadius);
 function render(state) {
   const robot = robotRenderModel(state);
   const target = targetRenderModel(state);
+  const obstacle = state.obstacles[0];
 
   elements.world.style.width = `${state.world.width}px`;
   elements.world.style.height = `${state.world.height}px`;
   Object.assign(elements.robot.style, robot);
   Object.assign(elements.target.style, target);
+  Object.assign(elements.obstacle.style, {
+    left: `${obstacle.x}px`,
+    top: `${state.world.height - obstacle.y}px`,
+    width: `${obstacle.width}px`,
+    height: `${obstacle.height}px`,
+  });
 
   elements.x.textContent = formatNumber(state.robot.x);
   elements.y.textContent = formatNumber(state.robot.y);
@@ -64,6 +75,9 @@ function render(state) {
   elements.speed.textContent = formatNumber(state.robot.speed);
   elements.step.textContent = String(state.step);
   elements.time.textContent = String(state.time);
+  elements.frontDistance.textContent = formatSensorDistance(
+    state.sensors.frontDistance.distance,
+  );
   elements.eventCount.textContent = String(state.events.length);
   elements.missionStatus.textContent = missionStatusLabel(state.mission.status);
   elements.missionAttempts.textContent = String(state.mission.attemptCount);
@@ -95,6 +109,10 @@ function formatNumber(value) {
   return Number(value.toFixed(2)).toString();
 }
 
+function formatSensorDistance(value) {
+  return formatNumber(value);
+}
+
 for (const button of document.querySelectorAll('[data-control]')) {
   button.addEventListener('click', () => {
     const state = button.dataset.control === 'RESET'
@@ -113,8 +131,18 @@ elements.runProgram.addEventListener('click', async () => {
     const result = await programController.runSequentially({
       onStep(state, step) {
         render(state);
+        const progress = step.total === null
+          ? `Running action ${step.index + 1}`
+          : `Running action ${step.index + 1} of ${step.total}`;
         showProgramMessage(
-          `Running action ${step.index + 1} of ${step.total} · ${step.block.toString()}`,
+          `${progress} · ${step.block.toString()}`,
+          false,
+        );
+      },
+      onSensor(state, step) {
+        render(state);
+        showProgramMessage(
+          `Sensor read · front distance ${formatSensorDistance(step.reading.distance)}`,
           false,
         );
       },
