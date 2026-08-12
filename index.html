@@ -19,7 +19,7 @@
     <main class="app-shell">
       <header class="app-header">
         <div>
-          <p class="eyebrow">M9 · Acceleration and changing velocity</p>
+          <p class="eyebrow">M10 · Force, mass, and Newton's Second Law</p>
           <h1>Visual Playground</h1>
           <p class="subtitle">Guide one robot through a deterministic 2D world.</p>
         </div>
@@ -30,17 +30,17 @@
         <div class="panel-heading">
           <div>
             <p class="panel-kicker">Active mission</p>
-            <h2 id="mission-title">Speed Up to the Target</h2>
+            <h2 id="mission-title">Force, Mass, Motion</h2>
           </div>
           <span id="mission-status" class="mission-status">Ready</span>
         </div>
-        <p id="mission-description" class="mission-description">Use initial speed, acceleration, and time to reach the target.</p>
+        <p id="mission-description" class="mission-description">Choose mass, force, and time to reach the target.</p>
         <dl class="mission-metrics" aria-live="polite">
           <div><dt>Distance</dt><dd id="mission-distance">200</dd></div>
           <div><dt>Attempts</dt><dd id="mission-attempts">0</dd></div>
           <div><dt>Radius</dt><dd id="mission-radius">15</dd></div>
         </dl>
-        <p class="mission-target">Target: <span id="mission-target">(175, 200)</span></p>
+        <p class="mission-target">Target: <span id="mission-target">(200, 200)</span></p>
         <p id="mission-feedback" class="mission-feedback">Run your Blockly program to begin the mission.</p>
       </section>
 
@@ -63,10 +63,12 @@
           <div class="world-frame">
             <div id="world" class="world" aria-label="600 by 400 robot world">
               <div id="obstacle" class="obstacle" aria-label="Wall obstacle"></div>
-              <div id="target" class="target" aria-label="Target at x 175, y 200">
+              <div id="target" class="target" aria-label="Target at x 200, y 200">
                 <span class="target-ring"></span>
                 <span class="target-core"></span>
               </div>
+              <div id="force-arrow" class="physics-arrow force-arrow" aria-label="Net force arrow"></div>
+              <div id="acceleration-arrow" class="physics-arrow acceleration-arrow" aria-label="Acceleration arrow"></div>
               <div id="velocity-arrow" class="velocity-arrow" aria-label="Velocity direction arrow"></div>
               <div id="robot" class="robot" aria-label="Robot">
                 <span class="robot-body"></span>
@@ -117,7 +119,7 @@
           <div class="panel-heading">
             <div>
               <p class="panel-kicker">Motion fundamentals</p>
-              <h2 id="physics-title">Physics — Acceleration</h2>
+              <h2 id="physics-title">Physics — Newton's Second Law</h2>
             </div>
           </div>
           <dl class="physics-grid" aria-live="polite">
@@ -156,6 +158,21 @@
             <p id="acceleration-velocity-equation" class="acceleration-equation">vf = vi + at</p>
             <p id="acceleration-displacement-equation" class="acceleration-equation">d = vi t + 1/2 a t²</p>
             <p id="acceleration-explanation" class="physics-explanation">Run an accelerate-for-time block to observe changing velocity.</p>
+          </div>
+          <div class="force-section" aria-live="polite">
+            <h3>Force and mass</h3>
+            <dl class="vector-grid">
+              <div><dt>Mass</dt><dd id="force-mass">1 mass-units</dd></div>
+              <div><dt>Net force</dt><dd id="force-net">0 force-units</dd></div>
+              <div><dt>Derived acceleration</dt><dd id="force-acceleration">0 units/s²</dd></div>
+            </dl>
+            <p class="force-law">a = F<sub>net</sub> / m</p>
+            <p id="force-equation" class="acceleration-equation">0 = 0 / 1</p>
+            <p id="force-chain" class="force-chain">Force + Mass → Acceleration → Velocity Change → Motion</p>
+            <div class="comparison-cards">
+              <p id="comparison-mass">Same force with greater mass gives smaller acceleration.</p>
+              <p id="comparison-force">Same mass with greater force gives greater acceleration.</p>
+            </div>
           </div>
         </section>
 
@@ -198,6 +215,6 @@
     </main>
 
     <script src="./node_modules/blockly/blockly.min.js"></script>
-    <script type="module" src="./src/main.js?v=m9-acceleration-contract"></script>
+    <script type="module" src="./src/main.js?v=m10-force-contract"></script>
   </body>
 </html>

@@ -155,6 +155,40 @@ h1 {
   transition: left 180ms ease, top 180ms ease, width 180ms ease, transform 180ms ease, opacity 180ms ease;
 }
 
+.physics-arrow {
+  position: absolute;
+  z-index: 4;
+  height: 3px;
+  transform-origin: left center;
+  border-radius: 999px;
+  pointer-events: none;
+  transition: left 180ms ease, top 180ms ease, width 180ms ease, transform 180ms ease, opacity 180ms ease;
+}
+
+.physics-arrow::after {
+  position: absolute;
+  top: 50%;
+  right: -2px;
+  width: 8px;
+  height: 8px;
+  transform: translateY(-50%) rotate(45deg);
+  border-top: 3px solid currentColor;
+  border-right: 3px solid currentColor;
+  content: "";
+}
+
+.force-arrow {
+  color: #fbbf24;
+  background: #f59e0b;
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.75);
+}
+
+.acceleration-arrow {
+  color: #f9a8d4;
+  background: #ec4899;
+  box-shadow: 0 0 10px rgba(236, 72, 153, 0.7);
+}
+
 .velocity-arrow::after {
   position: absolute;
   top: 50%;
@@ -520,6 +554,49 @@ h1 {
   color: #e8c3c3;
   font-family: "SFMono-Regular", Consolas, "Liberation Mono", monospace;
   font-size: 0.7rem;
+}
+
+.force-section {
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid #263044;
+}
+
+.force-section h3 {
+  margin: 0 0 8px;
+  color: #fcd34d;
+  font-size: 0.66rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.force-law {
+  margin: 12px 0 0;
+  color: #fde68a;
+  font-weight: 800;
+}
+
+.force-chain {
+  color: #f0d9a3;
+  font-size: 0.7rem;
+  line-height: 1.5;
+}
+
+.comparison-cards {
+  display: grid;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.comparison-cards p {
+  margin: 0;
+  padding: 8px;
+  border: 1px solid #3b3424;
+  border-radius: 7px;
+  color: #c7b990;
+  background: #17150f;
+  font-size: 0.66rem;
+  line-height: 1.4;
 }
 
 .learning-graphs {

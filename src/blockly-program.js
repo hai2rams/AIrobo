@@ -4,6 +4,11 @@ import {
   MAX_PHYSICS_SPEED,
 } from './physics-motion.js';
 import { MAX_ACCELERATION_MAGNITUDE } from './acceleration-motion.js';
+import {
+  MAX_FORCE_MAGNITUDE,
+  MAX_MASS,
+  MIN_MASS,
+} from './force-mass.js';
 
 export const BLOCK_TYPES = Object.freeze({
   WHEN_START: 'when_start',
@@ -18,6 +23,9 @@ export const BLOCK_TYPES = Object.freeze({
   MOVE_FOR_TIME: 'move_for_time',
   SET_ACCELERATION: 'set_acceleration',
   ACCELERATE_FOR_TIME: 'accelerate_for_time',
+  SET_MASS: 'set_mass',
+  SET_NET_FORCE: 'set_net_force',
+  APPLY_FORCE_FOR_TIME: 'apply_force_for_time',
   LOGIC_COMPARE: 'logic_compare',
   NUMBER: 'math_number',
 });
@@ -148,6 +156,7 @@ export function createBlocklyProgramController(workspace, playground) {
       onPhysics = () => {},
       onVector = () => {},
       onAcceleration = () => {},
+      onForce = () => {},
     } = {}) {
       assertNotRunning();
       const program = compileWorkspaceProgram(workspace);
@@ -175,6 +184,7 @@ export function createBlocklyProgramController(workspace, playground) {
           onPhysics,
           onVector,
           onAcceleration,
+          onForce,
           fixedTotal,
         });
       } finally {
@@ -263,6 +273,29 @@ function compileSequence(firstBlock) {
           block,
           'DURATION',
           'Acceleration duration',
+          MAX_MOVE_DURATION,
+        ),
+      });
+    } else if (block.type === BLOCK_TYPES.SET_MASS) {
+      nodes.push({
+        kind: 'SET_MASS',
+        block,
+        mass: readMassValue(block),
+      });
+    } else if (block.type === BLOCK_TYPES.SET_NET_FORCE) {
+      nodes.push({
+        kind: 'SET_NET_FORCE',
+        block,
+        netForce: readForceValue(block),
+      });
+    } else if (block.type === BLOCK_TYPES.APPLY_FORCE_FOR_TIME) {
+      nodes.push({
+        kind: 'APPLY_FORCE_FOR_TIME',
+        block,
+        duration: readPhysicsValue(
+          block,
+          'DURATION',
+          'Force duration',
           MAX_MOVE_DURATION,
         ),
       });
@@ -360,6 +393,27 @@ function executeProgram(nodes, context) {
       context.budget.consume('acceleration calculation');
       context.budget.consume('robot action');
       const result = accelerateForTimeResult(context.playground, node.duration);
+      context.actions.push(result.action);
+      continue;
+    }
+
+    if (node.kind === 'SET_MASS') {
+      context.budget.consume('set mass');
+      setMassResult(context.playground, node.mass);
+      continue;
+    }
+
+    if (node.kind === 'SET_NET_FORCE') {
+      context.budget.consume('set net force');
+      setNetForceResult(context.playground, node.netForce);
+      continue;
+    }
+
+    if (node.kind === 'APPLY_FORCE_FOR_TIME') {
+      context.budget.consume('force calculation');
+      context.budget.consume('acceleration calculation');
+      context.budget.consume('robot action');
+      const result = applyForceForTimeResult(context.playground, node.duration);
       context.actions.push(result.action);
       continue;
     }
@@ -494,6 +548,59 @@ async function executeProgramSequentially(nodes, context) {
         duration: node.duration,
         action: result.action,
         calculation: result.calculation,
+        vectorCalculation: result.vectorCalculation,
+        index,
+        total: context.fixedTotal,
+      });
+      await context.wait(context.delayMs);
+      context.assertActive();
+      continue;
+    }
+
+    if (node.kind === 'SET_MASS') {
+      context.budget.consume('set mass');
+      context.workspace.highlightBlock?.(node.block.id);
+      state = setMassResult(context.playground, node.mass);
+      context.onForce(state, {
+        operation: 'SET_MASS',
+        block: node.block,
+        mass: node.mass,
+      });
+      await context.wait(context.delayMs);
+      context.assertActive();
+      continue;
+    }
+
+    if (node.kind === 'SET_NET_FORCE') {
+      context.budget.consume('set net force');
+      context.workspace.highlightBlock?.(node.block.id);
+      state = setNetForceResult(context.playground, node.netForce);
+      context.onForce(state, {
+        operation: 'SET_NET_FORCE',
+        block: node.block,
+        netForce: node.netForce,
+      });
+      await context.wait(context.delayMs);
+      context.assertActive();
+      continue;
+    }
+
+    if (node.kind === 'APPLY_FORCE_FOR_TIME') {
+      context.budget.consume('force calculation');
+      context.budget.consume('acceleration calculation');
+      context.budget.consume('robot action');
+      context.workspace.highlightBlock?.(node.block.id);
+      const result = applyForceForTimeResult(context.playground, node.duration);
+      state = result.state;
+      const index = context.actions.length;
+      context.actions.push(result.action);
+      context.onForce(state, {
+        operation: 'APPLY_FORCE_FOR_TIME',
+        block: node.block,
+        duration: node.duration,
+        action: result.action,
+        calculation: result.calculation,
+        accelerationCalculation: result.accelerationCalculation,
         vectorCalculation: result.vectorCalculation,
         index,
         total: context.fixedTotal,
@@ -727,6 +834,39 @@ function accelerateForTimeResult(playground, duration) {
   }
 }
 
+function setMassResult(playground, mass) {
+  if (typeof playground.setMass !== 'function') {
+    throw new ProgramCompileError('This program requires the force and mass learning runtime.');
+  }
+  try {
+    return playground.setMass(mass);
+  } catch (error) {
+    throw new ProgramCompileError(error.message);
+  }
+}
+
+function setNetForceResult(playground, netForce) {
+  if (typeof playground.setNetForce !== 'function') {
+    throw new ProgramCompileError('This program requires the force and mass learning runtime.');
+  }
+  try {
+    return playground.setNetForce(netForce);
+  } catch (error) {
+    throw new ProgramCompileError(error.message);
+  }
+}
+
+function applyForceForTimeResult(playground, duration) {
+  if (typeof playground.applyForceForTime !== 'function') {
+    throw new ProgramCompileError('This program requires the force and mass learning runtime.');
+  }
+  try {
+    return playground.applyForceForTime(duration);
+  } catch (error) {
+    throw new ProgramCompileError(error.message);
+  }
+}
+
 function createExecutionContext(playground, actions, isActive) {
   let executionSteps = 0;
 
@@ -785,6 +925,39 @@ function readAccelerationValue(block) {
   ) {
     throw new ProgramCompileError(
       `Acceleration must be a finite number from -${MAX_ACCELERATION_MAGNITUDE} to ${MAX_ACCELERATION_MAGNITUDE}.`,
+    );
+  }
+  return value;
+}
+
+function readMassValue(block) {
+  const rawValue = block.getFieldValue('MASS');
+  const value = Number(rawValue);
+  if (
+    rawValue === null
+    || rawValue === ''
+    || !Number.isFinite(value)
+    || value < MIN_MASS
+    || value > MAX_MASS
+  ) {
+    throw new ProgramCompileError(
+      `Mass must be a finite number from ${MIN_MASS} to ${MAX_MASS}.`,
+    );
+  }
+  return value;
+}
+
+function readForceValue(block) {
+  const rawValue = block.getFieldValue('FORCE');
+  const value = Number(rawValue);
+  if (
+    rawValue === null
+    || rawValue === ''
+    || !Number.isFinite(value)
+    || Math.abs(value) > MAX_FORCE_MAGNITUDE
+  ) {
+    throw new ProgramCompileError(
+      `Net force must be a finite number from -${MAX_FORCE_MAGNITUDE} to ${MAX_FORCE_MAGNITUDE}.`,
     );
   }
   return value;

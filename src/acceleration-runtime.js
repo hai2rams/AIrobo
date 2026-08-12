@@ -39,6 +39,40 @@ export function createAccelerationRuntime(playground) {
     return decoratedState();
   }
 
+  function executeConstantAcceleration(acceleration, duration) {
+    if (!Number.isFinite(acceleration)) {
+      throw new TypeError('Derived acceleration must be a finite number.');
+    }
+    const before = playground.getState();
+    const segmentState = { ...accelerationState, acceleration };
+    const result = calculateAccelerationMotion(
+      segmentState,
+      before.physics.speed,
+      duration,
+      before.vector.headingDegrees,
+    );
+    const previousCount = before.events.length;
+
+    const vectorResult = playground.moveWithVector({
+      distance: result.action.distance,
+      duration: result.calculation.effectiveTime,
+      speed: result.calculation.finalVelocity,
+    });
+    const movementEvents = playground.getState().events.slice(previousCount);
+    eventLog.push(result.calculation, ...movementEvents);
+
+    playground.setPhysicsSpeed(result.calculation.finalVelocity);
+    accelerationState = result.accelerationState;
+
+    return {
+      action: result.action,
+      calculation: result.calculation,
+      vectorCalculation: vectorResult.vectorCalculation,
+      displacementMatchesKernel: vectorResult.displacementMatchesKernel,
+      state: decoratedState(),
+    };
+  }
+
   return {
     getState() {
       return decoratedState();
@@ -86,34 +120,10 @@ export function createAccelerationRuntime(playground) {
     },
 
     accelerateForTime(duration) {
-      const before = playground.getState();
-      const result = calculateAccelerationMotion(
-        accelerationState,
-        before.physics.speed,
-        duration,
-        before.vector.headingDegrees,
-      );
-      const previousCount = before.events.length;
-
-      const vectorResult = playground.moveWithVector({
-        distance: result.action.distance,
-        duration: result.calculation.effectiveTime,
-        speed: result.calculation.finalVelocity,
-      });
-      const movementEvents = playground.getState().events.slice(previousCount);
-      eventLog.push(result.calculation, ...movementEvents);
-
-      playground.setPhysicsSpeed(result.calculation.finalVelocity);
-      accelerationState = result.accelerationState;
-
-      return {
-        action: result.action,
-        calculation: result.calculation,
-        vectorCalculation: vectorResult.vectorCalculation,
-        displacementMatchesKernel: vectorResult.displacementMatchesKernel,
-        state: decoratedState(),
-      };
+      return executeConstantAcceleration(accelerationState.acceleration, duration);
     },
+
+    executeConstantAcceleration,
 
     execute(control) {
       if (control === 'RESET') {

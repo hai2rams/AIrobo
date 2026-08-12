@@ -1,4 +1,4 @@
-import { BLOCK_TYPES } from './blockly-program.js?v=m9-acceleration-contract';
+import { BLOCK_TYPES } from './blockly-program.js?v=m10-force-contract';
 
 export const ROBOT_TOOLBOX = Object.freeze({
   kind: 'flyoutToolbox',
@@ -12,6 +12,9 @@ export const ROBOT_TOOLBOX = Object.freeze({
     { kind: 'block', type: BLOCK_TYPES.MOVE_FOR_TIME },
     { kind: 'block', type: BLOCK_TYPES.SET_ACCELERATION },
     { kind: 'block', type: BLOCK_TYPES.ACCELERATE_FOR_TIME },
+    { kind: 'block', type: BLOCK_TYPES.SET_MASS },
+    { kind: 'block', type: BLOCK_TYPES.SET_NET_FORCE },
+    { kind: 'block', type: BLOCK_TYPES.APPLY_FORCE_FOR_TIME },
     { kind: 'block', type: BLOCK_TYPES.REPEAT },
     { kind: 'block', type: BLOCK_TYPES.IF_ELSE },
     { kind: 'block', type: BLOCK_TYPES.FRONT_DISTANCE },
@@ -39,15 +42,21 @@ export const ACCEPTANCE_PROGRAM = Object.freeze({
         next: {
           block: {
             type: BLOCK_TYPES.SET_SPEED,
-            fields: { SPEED: 10 },
+            fields: { SPEED: 0 },
             next: {
               block: {
-                type: BLOCK_TYPES.SET_ACCELERATION,
-                fields: { ACCELERATION: 2 },
+                type: BLOCK_TYPES.SET_MASS,
+                fields: { MASS: 2 },
                 next: {
                   block: {
-                    type: BLOCK_TYPES.ACCELERATE_FOR_TIME,
-                    fields: { DURATION: 5 },
+                    type: BLOCK_TYPES.SET_NET_FORCE,
+                    fields: { FORCE: 4 },
+                    next: {
+                      block: {
+                        type: BLOCK_TYPES.APPLY_FORCE_FOR_TIME,
+                        fields: { DURATION: 10 },
+                      },
+                    },
                   },
                 },
               },
@@ -194,6 +203,56 @@ export function registerRobotBlocks(Blockly) {
       nextStatement: null,
       colour: 10,
       tooltip: 'Move with constant acceleration for a finite duration.',
+    },
+    {
+      type: BLOCK_TYPES.SET_MASS,
+      message0: 'set mass %1 mass-units',
+      args0: [
+        {
+          type: 'field_number',
+          name: 'MASS',
+          value: 1,
+          min: 0.1,
+          max: 100,
+        },
+      ],
+      previousStatement: null,
+      nextStatement: null,
+      colour: 190,
+      tooltip: 'Set mass from 0.1 to 100 mass-units.',
+    },
+    {
+      type: BLOCK_TYPES.SET_NET_FORCE,
+      message0: 'set net force %1 force-units',
+      args0: [
+        {
+          type: 'field_number',
+          name: 'FORCE',
+          value: 10,
+          min: -500,
+          max: 500,
+        },
+      ],
+      previousStatement: null,
+      nextStatement: null,
+      colour: 190,
+      tooltip: 'Set signed net force along the robot heading axis.',
+    },
+    {
+      type: BLOCK_TYPES.APPLY_FORCE_FOR_TIME,
+      message0: 'apply force for %1 seconds',
+      args0: [
+        {
+          type: 'field_number',
+          name: 'DURATION',
+          value: 5,
+          min: 0,
+        },
+      ],
+      previousStatement: null,
+      nextStatement: null,
+      colour: 190,
+      tooltip: "Derive acceleration with Newton's Second Law and reuse M9 motion.",
     },
     {
       type: BLOCK_TYPES.REPEAT,

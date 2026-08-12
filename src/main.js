@@ -4,27 +4,33 @@ import {
   targetRenderModel,
 } from './playground.js';
 import { createMissionRuntime } from './mission-runtime.js';
-import { ACCELERATION_FUNDAMENTALS_MISSION } from './acceleration-fundamentals-mission.js';
+import { NEWTON_SECOND_LAW_MISSION } from './newton-second-law-mission.js';
 import { createSensorRuntime } from './sensor-runtime.js?v=m5-spec-contract';
 import { createPhysicsRuntime } from './physics-runtime.js?v=m7-physics-contract';
 import { createVectorRuntime } from './vector-runtime.js?v=m8-vector-contract';
 import { velocityArrowRenderModel } from './vector-motion.js?v=m8-vector-contract';
 import { createAccelerationRuntime } from './acceleration-runtime.js?v=m9-acceleration-contract';
-import { createBlocklyWorkspace } from './blockly-blocks.js?v=m9-acceleration-contract';
+import { createForceRuntime } from './force-runtime.js?v=m10-force-contract';
+import {
+  accelerationArrowRenderModel,
+  forceArrowRenderModel,
+} from './force-mass.js?v=m10-force-contract';
+import { createBlocklyWorkspace } from './blockly-blocks.js?v=m10-force-contract';
 import {
   createBlocklyProgramController,
   ProgramCompileError,
-} from './blockly-program.js?v=m9-acceleration-contract';
+} from './blockly-program.js?v=m10-force-contract';
 
 const simulationPlayground = createPlayground();
 const missionPlayground = createMissionRuntime(
-  ACCELERATION_FUNDAMENTALS_MISSION,
+  NEWTON_SECOND_LAW_MISSION,
   simulationPlayground,
 );
 const sensorPlayground = createSensorRuntime(missionPlayground);
 const physicsPlayground = createPhysicsRuntime(sensorPlayground);
 const vectorPlayground = createVectorRuntime(physicsPlayground);
-const playground = createAccelerationRuntime(vectorPlayground);
+const accelerationPlayground = createAccelerationRuntime(vectorPlayground);
+const playground = createForceRuntime(accelerationPlayground);
 const blocklyWorkspace = createBlocklyWorkspace(
   globalThis.Blockly,
   document.querySelector('#blockly-workspace'),
@@ -35,6 +41,8 @@ const elements = {
   world: document.querySelector('#world'),
   robot: document.querySelector('#robot'),
   velocityArrow: document.querySelector('#velocity-arrow'),
+  forceArrow: document.querySelector('#force-arrow'),
+  accelerationArrow: document.querySelector('#acceleration-arrow'),
   target: document.querySelector('#target'),
   obstacle: document.querySelector('#obstacle'),
   x: document.querySelector('#state-x'),
@@ -81,23 +89,34 @@ const elements = {
   accelerationExplanation: document.querySelector('#acceleration-explanation'),
   velocityGraphLine: document.querySelector('#velocity-time-line'),
   positionGraphLine: document.querySelector('#position-time-line'),
+  forceMass: document.querySelector('#force-mass'),
+  forceNet: document.querySelector('#force-net'),
+  forceAcceleration: document.querySelector('#force-acceleration'),
+  forceEquation: document.querySelector('#force-equation'),
+  forceChain: document.querySelector('#force-chain'),
+  comparisonMass: document.querySelector('#comparison-mass'),
+  comparisonForce: document.querySelector('#comparison-force'),
 };
 
-elements.missionTitle.textContent = ACCELERATION_FUNDAMENTALS_MISSION.title;
-elements.missionDescription.textContent = ACCELERATION_FUNDAMENTALS_MISSION.description;
-elements.missionTarget.textContent = `(${ACCELERATION_FUNDAMENTALS_MISSION.target.x}, ${ACCELERATION_FUNDAMENTALS_MISSION.target.y})`;
-elements.missionRadius.textContent = String(ACCELERATION_FUNDAMENTALS_MISSION.successRadius);
+elements.missionTitle.textContent = NEWTON_SECOND_LAW_MISSION.title;
+elements.missionDescription.textContent = NEWTON_SECOND_LAW_MISSION.description;
+elements.missionTarget.textContent = `(${NEWTON_SECOND_LAW_MISSION.target.x}, ${NEWTON_SECOND_LAW_MISSION.target.y})`;
+elements.missionRadius.textContent = String(NEWTON_SECOND_LAW_MISSION.successRadius);
 
 function render(state) {
   const robot = robotRenderModel(state);
   const target = targetRenderModel(state);
   const velocityArrow = velocityArrowRenderModel(state);
+  const forceArrow = forceArrowRenderModel(state);
+  const accelerationArrow = accelerationArrowRenderModel(state);
   const obstacle = state.obstacles[0];
 
   elements.world.style.width = `${state.world.width}px`;
   elements.world.style.height = `${state.world.height}px`;
   Object.assign(elements.robot.style, robot);
   Object.assign(elements.velocityArrow.style, velocityArrow);
+  Object.assign(elements.forceArrow.style, forceArrow);
+  Object.assign(elements.accelerationArrow.style, accelerationArrow);
   Object.assign(elements.target.style, target);
   Object.assign(elements.obstacle.style, {
     left: `${obstacle.x}px`,
@@ -125,6 +144,7 @@ function render(state) {
   renderPhysics(state.physics);
   renderVector(state.vector);
   renderAcceleration(state.acceleration);
+  renderForce(state.force);
 
   elements.eventLog.replaceChildren();
 
@@ -143,6 +163,18 @@ function render(state) {
   }
 
   elements.eventLog.scrollTop = elements.eventLog.scrollHeight;
+}
+
+function renderForce(force) {
+  const acceleration = force.netForce / force.mass;
+  elements.forceMass.textContent = `${formatNumber(force.mass)} mass-units`;
+  elements.forceNet.textContent = `${formatNumber(force.netForce)} force-units`;
+  elements.forceAcceleration.textContent = `${formatNumber(acceleration)} units/s²`;
+  elements.forceEquation.textContent = `${formatNumber(acceleration)} = ${formatNumber(force.netForce)} / ${formatNumber(force.mass)}`;
+  elements.forceChain.textContent = 'Force + Mass → Acceleration → Velocity Change → Motion';
+  const comparison = force.comparisons;
+  elements.comparisonMass.textContent = `Same force, mass ${formatNumber(force.mass)} → ${formatNumber(comparison.currentAcceleration)}; mass ${formatNumber(comparison.largerMass)} → ${formatNumber(comparison.largerMassAcceleration)} units/s².`;
+  elements.comparisonForce.textContent = `Same mass, force ${formatNumber(force.netForce)} → ${formatNumber(comparison.currentAcceleration)}; force ${formatNumber(comparison.largerForce)} → ${formatNumber(comparison.largerForceAcceleration)} units/s².`;
 }
 
 function renderAcceleration(acceleration) {
@@ -293,6 +325,18 @@ elements.runProgram.addEventListener('click', async () => {
         const message = step.operation === 'SET_ACCELERATION'
           ? `Acceleration set · ${formatNumber(step.acceleration)} units/s²`
           : `Acceleration · ${formatNumber(step.calculation.initialVelocity)} → ${formatNumber(step.calculation.finalVelocity)} units/s · ${formatNumber(step.calculation.displacement)} units`;
+        showProgramMessage(message, false);
+      },
+      onForce(state, step) {
+        render(state);
+        let message;
+        if (step.operation === 'SET_MASS') {
+          message = `Mass set · ${formatNumber(step.mass)} mass-units`;
+        } else if (step.operation === 'SET_NET_FORCE') {
+          message = `Net force set · ${formatNumber(step.netForce)} force-units`;
+        } else {
+          message = `Newton's Second Law · ${formatNumber(step.calculation.acceleration)} = ${formatNumber(step.calculation.netForce)} / ${formatNumber(step.calculation.mass)}`;
+        }
         showProgramMessage(message, false);
       },
     });
