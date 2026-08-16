@@ -9,6 +9,7 @@ import {
   MAX_MASS,
   MIN_MASS,
 } from './force-mass.js';
+import { getSurface } from './friction-motion.js';
 
 export const BLOCK_TYPES = Object.freeze({
   WHEN_START: 'when_start',
@@ -26,6 +27,7 @@ export const BLOCK_TYPES = Object.freeze({
   SET_MASS: 'set_mass',
   SET_NET_FORCE: 'set_net_force',
   APPLY_FORCE_FOR_TIME: 'apply_force_for_time',
+  SET_SURFACE: 'set_surface',
   LOGIC_COMPARE: 'logic_compare',
   NUMBER: 'math_number',
 });
@@ -157,6 +159,7 @@ export function createBlocklyProgramController(workspace, playground) {
       onVector = () => {},
       onAcceleration = () => {},
       onForce = () => {},
+      onFriction = () => {},
     } = {}) {
       assertNotRunning();
       const program = compileWorkspaceProgram(workspace);
@@ -185,6 +188,7 @@ export function createBlocklyProgramController(workspace, playground) {
           onVector,
           onAcceleration,
           onForce,
+          onFriction,
           fixedTotal,
         });
       } finally {
@@ -281,6 +285,12 @@ function compileSequence(firstBlock) {
         kind: 'SET_MASS',
         block,
         mass: readMassValue(block),
+      });
+    } else if (block.type === BLOCK_TYPES.SET_SURFACE) {
+      nodes.push({
+        kind: 'SET_SURFACE',
+        block,
+        surfaceId: readSurfaceId(block),
       });
     } else if (block.type === BLOCK_TYPES.SET_NET_FORCE) {
       nodes.push({
@@ -403,6 +413,12 @@ function executeProgram(nodes, context) {
       continue;
     }
 
+    if (node.kind === 'SET_SURFACE') {
+      context.budget.consume('set surface');
+      setSurfaceResult(context.playground, node.surfaceId);
+      continue;
+    }
+
     if (node.kind === 'SET_NET_FORCE') {
       context.budget.consume('set net force');
       setNetForceResult(context.playground, node.netForce);
@@ -410,6 +426,7 @@ function executeProgram(nodes, context) {
     }
 
     if (node.kind === 'APPLY_FORCE_FOR_TIME') {
+      context.budget.consume('friction calculation');
       context.budget.consume('force calculation');
       context.budget.consume('acceleration calculation');
       context.budget.consume('robot action');
@@ -571,6 +588,20 @@ async function executeProgramSequentially(nodes, context) {
       continue;
     }
 
+    if (node.kind === 'SET_SURFACE') {
+      context.budget.consume('set surface');
+      context.workspace.highlightBlock?.(node.block.id);
+      state = setSurfaceResult(context.playground, node.surfaceId);
+      context.onFriction(state, {
+        operation: 'SET_SURFACE',
+        block: node.block,
+        surfaceId: node.surfaceId,
+      });
+      await context.wait(context.delayMs);
+      context.assertActive();
+      continue;
+    }
+
     if (node.kind === 'SET_NET_FORCE') {
       context.budget.consume('set net force');
       context.workspace.highlightBlock?.(node.block.id);
@@ -586,6 +617,7 @@ async function executeProgramSequentially(nodes, context) {
     }
 
     if (node.kind === 'APPLY_FORCE_FOR_TIME') {
+      context.budget.consume('friction calculation');
       context.budget.consume('force calculation');
       context.budget.consume('acceleration calculation');
       context.budget.consume('robot action');
@@ -605,6 +637,15 @@ async function executeProgramSequentially(nodes, context) {
         index,
         total: context.fixedTotal,
       });
+      if (result.frictionCalculation) {
+        context.onFriction(state, {
+          operation: 'APPLY_FORCE_FOR_TIME',
+          block: node.block,
+          calculation: result.frictionCalculation,
+          index,
+          total: context.fixedTotal,
+        });
+      }
       await context.wait(context.delayMs);
       context.assertActive();
       continue;
@@ -845,6 +886,17 @@ function setMassResult(playground, mass) {
   }
 }
 
+function setSurfaceResult(playground, surfaceId) {
+  if (typeof playground.setSurface !== 'function') {
+    throw new ProgramCompileError('This program requires the friction learning runtime.');
+  }
+  try {
+    return playground.setSurface(surfaceId);
+  } catch (error) {
+    throw new ProgramCompileError(error.message);
+  }
+}
+
 function setNetForceResult(playground, netForce) {
   if (typeof playground.setNetForce !== 'function') {
     throw new ProgramCompileError('This program requires the force and mass learning runtime.');
@@ -961,4 +1013,13 @@ function readForceValue(block) {
     );
   }
   return value;
+}
+
+function readSurfaceId(block) {
+  const surfaceId = block.getFieldValue('SURFACE');
+  try {
+    return getSurface(surfaceId).id;
+  } catch (error) {
+    throw new ProgramCompileError(error.message);
+  }
 }

@@ -19,7 +19,7 @@
     <main class="app-shell">
       <header class="app-header">
         <div>
-          <p class="eyebrow">M10 · Force, mass, and Newton's Second Law</p>
+          <p class="eyebrow">M11 · Friction and realistic motion</p>
           <h1>Visual Playground</h1>
           <p class="subtitle">Guide one robot through a deterministic 2D world.</p>
         </div>
@@ -30,11 +30,11 @@
         <div class="panel-heading">
           <div>
             <p class="panel-kicker">Active mission</p>
-            <h2 id="mission-title">Force, Mass, Motion</h2>
+            <h2 id="mission-title">Move Across a Rough Surface</h2>
           </div>
           <span id="mission-status" class="mission-status">Ready</span>
         </div>
-        <p id="mission-description" class="mission-description">Choose mass, force, and time to reach the target.</p>
+        <p id="mission-description" class="mission-description">Choose enough force to overcome friction and reach the target.</p>
         <dl class="mission-metrics" aria-live="polite">
           <div><dt>Distance</dt><dd id="mission-distance">200</dd></div>
           <div><dt>Attempts</dt><dd id="mission-attempts">0</dd></div>
@@ -61,13 +61,14 @@
 
         <div class="playground-column">
           <div class="world-frame">
-            <div id="world" class="world" aria-label="600 by 400 robot world">
+            <div id="world" class="world" data-surface="normal" aria-label="600 by 400 robot world">
               <div id="obstacle" class="obstacle" aria-label="Wall obstacle"></div>
               <div id="target" class="target" aria-label="Target at x 200, y 200">
                 <span class="target-ring"></span>
                 <span class="target-core"></span>
               </div>
-              <div id="force-arrow" class="physics-arrow force-arrow" aria-label="Net force arrow"></div>
+              <div id="friction-arrow" class="physics-arrow friction-arrow" aria-label="Friction arrow"></div>
+              <div id="force-arrow" class="physics-arrow force-arrow" aria-label="Applied force arrow"></div>
               <div id="acceleration-arrow" class="physics-arrow acceleration-arrow" aria-label="Acceleration arrow"></div>
               <div id="velocity-arrow" class="velocity-arrow" aria-label="Velocity direction arrow"></div>
               <div id="robot" class="robot" aria-label="Robot">
@@ -119,7 +120,7 @@
           <div class="panel-heading">
             <div>
               <p class="panel-kicker">Motion fundamentals</p>
-              <h2 id="physics-title">Physics — Newton's Second Law</h2>
+              <h2 id="physics-title">Physics — Friction</h2>
             </div>
           </div>
           <dl class="physics-grid" aria-live="polite">
@@ -174,6 +175,25 @@
               <p id="comparison-force">Same mass with greater force gives greater acceleration.</p>
             </div>
           </div>
+          <div class="friction-section" aria-live="polite">
+            <h3>Surface resistance</h3>
+            <dl class="vector-grid friction-grid">
+              <div><dt>Surface</dt><dd id="friction-surface">Normal</dd></div>
+              <div><dt>Normal force</dt><dd id="friction-normal">10 force-units</dd></div>
+              <div><dt>Applied force</dt><dd id="friction-applied">0 force-units</dd></div>
+              <div><dt>Static maximum</dt><dd id="friction-static-max">3 force-units</dd></div>
+              <div><dt>Friction force</dt><dd id="friction-force">0 force-units</dd></div>
+              <div><dt>Net force</dt><dd id="friction-net">0 force-units</dd></div>
+              <div><dt>Mode</dt><dd id="friction-mode">READY</dd></div>
+            </dl>
+            <p class="force-law">Applied Force − Friction = Net Force</p>
+            <p id="friction-equation" class="acceleration-equation">0 + (0) = 0</p>
+            <p class="friction-chain">Applied Force → Friction → Net Force → Acceleration → Motion</p>
+            <div class="comparison-cards surface-comparison">
+              <p id="comparison-smooth">Smooth surface comparison appears after force is set.</p>
+              <p id="comparison-rough">Rough surface comparison appears after force is set.</p>
+            </div>
+          </div>
         </section>
 
         <section class="panel event-panel" aria-labelledby="events-title">
@@ -215,6 +235,6 @@
     </main>
 
     <script src="./node_modules/blockly/blockly.min.js"></script>
-    <script type="module" src="./src/main.js?v=m10-force-contract"></script>
+    <script type="module" src="./src/main.js?v=m11-friction-contract"></script>
   </body>
 </html>

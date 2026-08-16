@@ -1,4 +1,4 @@
-import { BLOCK_TYPES } from './blockly-program.js?v=m10-force-contract';
+import { BLOCK_TYPES } from './blockly-program.js?v=m11-friction-contract';
 
 export const ROBOT_TOOLBOX = Object.freeze({
   kind: 'flyoutToolbox',
@@ -12,6 +12,7 @@ export const ROBOT_TOOLBOX = Object.freeze({
     { kind: 'block', type: BLOCK_TYPES.MOVE_FOR_TIME },
     { kind: 'block', type: BLOCK_TYPES.SET_ACCELERATION },
     { kind: 'block', type: BLOCK_TYPES.ACCELERATE_FOR_TIME },
+    { kind: 'block', type: BLOCK_TYPES.SET_SURFACE },
     { kind: 'block', type: BLOCK_TYPES.SET_MASS },
     { kind: 'block', type: BLOCK_TYPES.SET_NET_FORCE },
     { kind: 'block', type: BLOCK_TYPES.APPLY_FORCE_FOR_TIME },
@@ -45,16 +46,22 @@ export const ACCEPTANCE_PROGRAM = Object.freeze({
             fields: { SPEED: 0 },
             next: {
               block: {
-                type: BLOCK_TYPES.SET_MASS,
-                fields: { MASS: 2 },
+                type: BLOCK_TYPES.SET_SURFACE,
+                fields: { SURFACE: 'rough' },
                 next: {
                   block: {
-                    type: BLOCK_TYPES.SET_NET_FORCE,
-                    fields: { FORCE: 4 },
+                    type: BLOCK_TYPES.SET_MASS,
+                    fields: { MASS: 2 },
                     next: {
                       block: {
-                        type: BLOCK_TYPES.APPLY_FORCE_FOR_TIME,
-                        fields: { DURATION: 10 },
+                        type: BLOCK_TYPES.SET_NET_FORCE,
+                        fields: { FORCE: 20 },
+                        next: {
+                          block: {
+                            type: BLOCK_TYPES.APPLY_FORCE_FOR_TIME,
+                            fields: { DURATION: 6 },
+                          },
+                        },
                       },
                     },
                   },
@@ -205,6 +212,26 @@ export function registerRobotBlocks(Blockly) {
       tooltip: 'Move with constant acceleration for a finite duration.',
     },
     {
+      type: BLOCK_TYPES.SET_SURFACE,
+      message0: 'set surface %1',
+      args0: [
+        {
+          type: 'field_dropdown',
+          name: 'SURFACE',
+          options: [
+            ['Normal', 'normal'],
+            ['Smooth', 'smooth'],
+            ['Rough', 'rough'],
+            ['Ideal / Frictionless', 'ideal'],
+          ],
+        },
+      ],
+      previousStatement: null,
+      nextStatement: null,
+      colour: 65,
+      tooltip: 'Choose deterministic surface friction coefficients.',
+    },
+    {
       type: BLOCK_TYPES.SET_MASS,
       message0: 'set mass %1 mass-units',
       args0: [
@@ -223,7 +250,7 @@ export function registerRobotBlocks(Blockly) {
     },
     {
       type: BLOCK_TYPES.SET_NET_FORCE,
-      message0: 'set net force %1 force-units',
+      message0: 'set applied force %1 force-units',
       args0: [
         {
           type: 'field_number',
@@ -236,7 +263,7 @@ export function registerRobotBlocks(Blockly) {
       previousStatement: null,
       nextStatement: null,
       colour: 190,
-      tooltip: 'Set signed net force along the robot heading axis.',
+      tooltip: 'Set signed applied force along the robot heading axis.',
     },
     {
       type: BLOCK_TYPES.APPLY_FORCE_FOR_TIME,
@@ -252,7 +279,7 @@ export function registerRobotBlocks(Blockly) {
       previousStatement: null,
       nextStatement: null,
       colour: 190,
-      tooltip: "Derive acceleration with Newton's Second Law and reuse M9 motion.",
+      tooltip: 'Calculate friction, then reuse Newton\'s Second Law and M9 motion.',
     },
     {
       type: BLOCK_TYPES.REPEAT,

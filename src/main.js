@@ -4,7 +4,7 @@ import {
   targetRenderModel,
 } from './playground.js';
 import { createMissionRuntime } from './mission-runtime.js';
-import { NEWTON_SECOND_LAW_MISSION } from './newton-second-law-mission.js';
+import { FRICTION_REALISTIC_MOTION_MISSION } from './friction-realistic-motion-mission.js';
 import { createSensorRuntime } from './sensor-runtime.js?v=m5-spec-contract';
 import { createPhysicsRuntime } from './physics-runtime.js?v=m7-physics-contract';
 import { createVectorRuntime } from './vector-runtime.js?v=m8-vector-contract';
@@ -13,24 +13,30 @@ import { createAccelerationRuntime } from './acceleration-runtime.js?v=m9-accele
 import { createForceRuntime } from './force-runtime.js?v=m10-force-contract';
 import {
   accelerationArrowRenderModel,
-  forceArrowRenderModel,
 } from './force-mass.js?v=m10-force-contract';
-import { createBlocklyWorkspace } from './blockly-blocks.js?v=m10-force-contract';
+import { createFrictionRuntime } from './friction-runtime.js?v=m11-friction-contract';
+import {
+  appliedForceArrowRenderModel,
+  frictionArrowRenderModel,
+  getSurface,
+} from './friction-motion.js?v=m11-friction-contract';
+import { createBlocklyWorkspace } from './blockly-blocks.js?v=m11-friction-contract';
 import {
   createBlocklyProgramController,
   ProgramCompileError,
-} from './blockly-program.js?v=m10-force-contract';
+} from './blockly-program.js?v=m11-friction-contract';
 
 const simulationPlayground = createPlayground();
 const missionPlayground = createMissionRuntime(
-  NEWTON_SECOND_LAW_MISSION,
+  FRICTION_REALISTIC_MOTION_MISSION,
   simulationPlayground,
 );
 const sensorPlayground = createSensorRuntime(missionPlayground);
 const physicsPlayground = createPhysicsRuntime(sensorPlayground);
 const vectorPlayground = createVectorRuntime(physicsPlayground);
 const accelerationPlayground = createAccelerationRuntime(vectorPlayground);
-const playground = createForceRuntime(accelerationPlayground);
+const forcePlayground = createForceRuntime(accelerationPlayground);
+const playground = createFrictionRuntime(forcePlayground);
 const blocklyWorkspace = createBlocklyWorkspace(
   globalThis.Blockly,
   document.querySelector('#blockly-workspace'),
@@ -42,6 +48,7 @@ const elements = {
   robot: document.querySelector('#robot'),
   velocityArrow: document.querySelector('#velocity-arrow'),
   forceArrow: document.querySelector('#force-arrow'),
+  frictionArrow: document.querySelector('#friction-arrow'),
   accelerationArrow: document.querySelector('#acceleration-arrow'),
   target: document.querySelector('#target'),
   obstacle: document.querySelector('#obstacle'),
@@ -96,18 +103,29 @@ const elements = {
   forceChain: document.querySelector('#force-chain'),
   comparisonMass: document.querySelector('#comparison-mass'),
   comparisonForce: document.querySelector('#comparison-force'),
+  frictionSurface: document.querySelector('#friction-surface'),
+  frictionNormal: document.querySelector('#friction-normal'),
+  frictionApplied: document.querySelector('#friction-applied'),
+  frictionStaticMax: document.querySelector('#friction-static-max'),
+  frictionForce: document.querySelector('#friction-force'),
+  frictionNet: document.querySelector('#friction-net'),
+  frictionMode: document.querySelector('#friction-mode'),
+  frictionEquation: document.querySelector('#friction-equation'),
+  comparisonSmooth: document.querySelector('#comparison-smooth'),
+  comparisonRough: document.querySelector('#comparison-rough'),
 };
 
-elements.missionTitle.textContent = NEWTON_SECOND_LAW_MISSION.title;
-elements.missionDescription.textContent = NEWTON_SECOND_LAW_MISSION.description;
-elements.missionTarget.textContent = `(${NEWTON_SECOND_LAW_MISSION.target.x}, ${NEWTON_SECOND_LAW_MISSION.target.y})`;
-elements.missionRadius.textContent = String(NEWTON_SECOND_LAW_MISSION.successRadius);
+elements.missionTitle.textContent = FRICTION_REALISTIC_MOTION_MISSION.title;
+elements.missionDescription.textContent = FRICTION_REALISTIC_MOTION_MISSION.description;
+elements.missionTarget.textContent = `(${FRICTION_REALISTIC_MOTION_MISSION.target.x}, ${FRICTION_REALISTIC_MOTION_MISSION.target.y})`;
+elements.missionRadius.textContent = String(FRICTION_REALISTIC_MOTION_MISSION.successRadius);
 
 function render(state) {
   const robot = robotRenderModel(state);
   const target = targetRenderModel(state);
   const velocityArrow = velocityArrowRenderModel(state);
-  const forceArrow = forceArrowRenderModel(state);
+  const forceArrow = appliedForceArrowRenderModel(state);
+  const frictionArrow = frictionArrowRenderModel(state);
   const accelerationArrow = accelerationArrowRenderModel(state);
   const obstacle = state.obstacles[0];
 
@@ -116,6 +134,7 @@ function render(state) {
   Object.assign(elements.robot.style, robot);
   Object.assign(elements.velocityArrow.style, velocityArrow);
   Object.assign(elements.forceArrow.style, forceArrow);
+  Object.assign(elements.frictionArrow.style, frictionArrow);
   Object.assign(elements.accelerationArrow.style, accelerationArrow);
   Object.assign(elements.target.style, target);
   Object.assign(elements.obstacle.style, {
@@ -124,6 +143,7 @@ function render(state) {
     width: `${obstacle.width}px`,
     height: `${obstacle.height}px`,
   });
+  elements.world.dataset.surface = state.friction.surfaceId;
 
   elements.x.textContent = formatNumber(state.robot.x);
   elements.y.textContent = formatNumber(state.robot.y);
@@ -145,6 +165,7 @@ function render(state) {
   renderVector(state.vector);
   renderAcceleration(state.acceleration);
   renderForce(state.force);
+  renderFriction(state.friction, state.force.mass);
 
   elements.eventLog.replaceChildren();
 
@@ -163,6 +184,25 @@ function render(state) {
   }
 
   elements.eventLog.scrollTop = elements.eventLog.scrollHeight;
+}
+
+function renderFriction(friction, mass) {
+  const surface = getSurface(friction.surfaceId);
+  const calculation = friction.lastCalculation;
+  const normalForce = calculation?.normalForce ?? mass * 10;
+  const staticLimit = calculation?.staticLimit ?? surface.muStatic * normalForce;
+  const frictionForce = calculation?.frictionForce ?? 0;
+  const netForce = calculation?.netForce ?? friction.appliedForce;
+  elements.frictionSurface.textContent = surface.label;
+  elements.frictionNormal.textContent = `${formatNumber(normalForce)} force-units`;
+  elements.frictionApplied.textContent = `${formatNumber(friction.appliedForce)} force-units`;
+  elements.frictionStaticMax.textContent = `${formatNumber(staticLimit)} force-units`;
+  elements.frictionForce.textContent = `${formatNumber(frictionForce)} force-units`;
+  elements.frictionNet.textContent = `${formatNumber(netForce)} force-units`;
+  elements.frictionMode.textContent = calculation?.frictionMode ?? 'READY';
+  elements.frictionEquation.textContent = `${formatNumber(friction.appliedForce)} + (${formatNumber(frictionForce)}) = ${formatNumber(netForce)}`;
+  elements.comparisonSmooth.textContent = `Smooth: friction ${formatNumber(Math.abs(friction.comparison.smooth.frictionForce))}, net ${formatNumber(friction.comparison.smooth.netForce)}, acceleration ${formatNumber(friction.comparison.smooth.acceleration)}.`;
+  elements.comparisonRough.textContent = `Rough: friction ${formatNumber(Math.abs(friction.comparison.rough.frictionForce))}, net ${formatNumber(friction.comparison.rough.netForce)}, acceleration ${formatNumber(friction.comparison.rough.acceleration)}.`;
 }
 
 function renderForce(force) {
@@ -333,10 +373,17 @@ elements.runProgram.addEventListener('click', async () => {
         if (step.operation === 'SET_MASS') {
           message = `Mass set · ${formatNumber(step.mass)} mass-units`;
         } else if (step.operation === 'SET_NET_FORCE') {
-          message = `Net force set · ${formatNumber(step.netForce)} force-units`;
+          message = `Applied force set · ${formatNumber(step.netForce)} force-units`;
         } else {
           message = `Newton's Second Law · ${formatNumber(step.calculation.acceleration)} = ${formatNumber(step.calculation.netForce)} / ${formatNumber(step.calculation.mass)}`;
         }
+        showProgramMessage(message, false);
+      },
+      onFriction(state, step) {
+        render(state);
+        const message = step.operation === 'SET_SURFACE'
+          ? `Surface set · ${getSurface(step.surfaceId).label}`
+          : `Friction · applied ${formatNumber(step.calculation.appliedForce)} + friction ${formatNumber(step.calculation.frictionForce)} = net ${formatNumber(step.calculation.netForce)}`;
         showProgramMessage(message, false);
       },
     });
