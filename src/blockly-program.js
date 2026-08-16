@@ -160,6 +160,7 @@ export function createBlocklyProgramController(workspace, playground) {
       onAcceleration = () => {},
       onForce = () => {},
       onFriction = () => {},
+      onEnergy = () => {},
     } = {}) {
       assertNotRunning();
       const program = compileWorkspaceProgram(workspace);
@@ -189,6 +190,7 @@ export function createBlocklyProgramController(workspace, playground) {
           onAcceleration,
           onForce,
           onFriction,
+          onEnergy,
           fixedTotal,
         });
       } finally {
@@ -642,6 +644,15 @@ async function executeProgramSequentially(nodes, context) {
           operation: 'APPLY_FORCE_FOR_TIME',
           block: node.block,
           calculation: result.frictionCalculation,
+          index,
+          total: context.fixedTotal,
+        });
+      }
+      if (result.workEnergyCalculation) {
+        context.onEnergy(state, {
+          operation: 'APPLY_FORCE_FOR_TIME',
+          block: node.block,
+          calculation: result.workEnergyCalculation,
           index,
           total: context.fixedTotal,
         });

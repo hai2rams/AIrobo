@@ -4,7 +4,7 @@ import {
   targetRenderModel,
 } from './playground.js';
 import { createMissionRuntime } from './mission-runtime.js';
-import { FRICTION_REALISTIC_MOTION_MISSION } from './friction-realistic-motion-mission.js';
+import { WORK_ENERGY_MISSION } from './work-energy-mission.js';
 import { createSensorRuntime } from './sensor-runtime.js?v=m5-spec-contract';
 import { createPhysicsRuntime } from './physics-runtime.js?v=m7-physics-contract';
 import { createVectorRuntime } from './vector-runtime.js?v=m8-vector-contract';
@@ -20,15 +20,20 @@ import {
   frictionArrowRenderModel,
   getSurface,
 } from './friction-motion.js?v=m11-friction-contract';
-import { createBlocklyWorkspace } from './blockly-blocks.js?v=m11-friction-contract';
+import { createWorkEnergyRuntime } from './work-energy-runtime.js?v=m12-work-energy-contract';
+import {
+  energyVisualizationModel,
+  workEnergyExplanation,
+} from './work-energy.js?v=m12-work-energy-contract';
+import { createBlocklyWorkspace } from './blockly-blocks.js?v=m12-work-energy-contract';
 import {
   createBlocklyProgramController,
   ProgramCompileError,
-} from './blockly-program.js?v=m11-friction-contract';
+} from './blockly-program.js?v=m12-work-energy-contract';
 
 const simulationPlayground = createPlayground();
 const missionPlayground = createMissionRuntime(
-  FRICTION_REALISTIC_MOTION_MISSION,
+  WORK_ENERGY_MISSION,
   simulationPlayground,
 );
 const sensorPlayground = createSensorRuntime(missionPlayground);
@@ -36,7 +41,8 @@ const physicsPlayground = createPhysicsRuntime(sensorPlayground);
 const vectorPlayground = createVectorRuntime(physicsPlayground);
 const accelerationPlayground = createAccelerationRuntime(vectorPlayground);
 const forcePlayground = createForceRuntime(accelerationPlayground);
-const playground = createFrictionRuntime(forcePlayground);
+const frictionPlayground = createFrictionRuntime(forcePlayground);
+const playground = createWorkEnergyRuntime(frictionPlayground);
 const blocklyWorkspace = createBlocklyWorkspace(
   globalThis.Blockly,
   document.querySelector('#blockly-workspace'),
@@ -113,12 +119,31 @@ const elements = {
   frictionEquation: document.querySelector('#friction-equation'),
   comparisonSmooth: document.querySelector('#comparison-smooth'),
   comparisonRough: document.querySelector('#comparison-rough'),
+  energyCurrent: document.querySelector('#energy-current'),
+  energyInitial: document.querySelector('#energy-initial'),
+  energyFinal: document.querySelector('#energy-final'),
+  energyDisplacement: document.querySelector('#energy-displacement'),
+  energyAppliedWork: document.querySelector('#energy-applied-work'),
+  energyFrictionWork: document.querySelector('#energy-friction-work'),
+  energyNetWork: document.querySelector('#energy-net-work'),
+  energyDelta: document.querySelector('#energy-delta'),
+  energyResidual: document.querySelector('#energy-residual'),
+  energyTheorem: document.querySelector('#energy-theorem'),
+  energyExplanation: document.querySelector('#energy-explanation'),
+  energyRunApplied: document.querySelector('#energy-run-applied'),
+  energyRunFriction: document.querySelector('#energy-run-friction'),
+  energyRunNet: document.querySelector('#energy-run-net'),
+  energyRunDelta: document.querySelector('#energy-run-delta'),
+  energyBarInitial: document.querySelector('#energy-bar-initial'),
+  energyBarFinal: document.querySelector('#energy-bar-final'),
+  energyBarApplied: document.querySelector('#energy-bar-applied'),
+  energyBarFriction: document.querySelector('#energy-bar-friction'),
 };
 
-elements.missionTitle.textContent = FRICTION_REALISTIC_MOTION_MISSION.title;
-elements.missionDescription.textContent = FRICTION_REALISTIC_MOTION_MISSION.description;
-elements.missionTarget.textContent = `(${FRICTION_REALISTIC_MOTION_MISSION.target.x}, ${FRICTION_REALISTIC_MOTION_MISSION.target.y})`;
-elements.missionRadius.textContent = String(FRICTION_REALISTIC_MOTION_MISSION.successRadius);
+elements.missionTitle.textContent = WORK_ENERGY_MISSION.title;
+elements.missionDescription.textContent = WORK_ENERGY_MISSION.description;
+elements.missionTarget.textContent = `(${WORK_ENERGY_MISSION.target.x}, ${WORK_ENERGY_MISSION.target.y})`;
+elements.missionRadius.textContent = String(WORK_ENERGY_MISSION.successRadius);
 
 function render(state) {
   const robot = robotRenderModel(state);
@@ -166,6 +191,7 @@ function render(state) {
   renderAcceleration(state.acceleration);
   renderForce(state.force);
   renderFriction(state.friction, state.force.mass);
+  renderEnergy(state.energy);
 
   elements.eventLog.replaceChildren();
 
@@ -184,6 +210,57 @@ function render(state) {
   }
 
   elements.eventLog.scrollTop = elements.eventLog.scrollHeight;
+}
+
+function renderEnergy(energy) {
+  const calculation = energy.lastCalculation;
+  const summary = energy.runSummary;
+  elements.energyCurrent.textContent = `${formatNumber(energy.currentKineticEnergy)} energy-units`;
+  elements.energyInitial.textContent = calculation
+    ? `${formatNumber(calculation.initialKineticEnergy)} energy-units`
+    : '—';
+  elements.energyFinal.textContent = calculation
+    ? `${formatNumber(calculation.finalKineticEnergy)} energy-units`
+    : '—';
+  elements.energyDisplacement.textContent = calculation
+    ? `${formatNumber(calculation.displacement)} world-units`
+    : '—';
+  elements.energyAppliedWork.textContent = calculation
+    ? `${formatNumber(calculation.appliedWork)} energy-units`
+    : '—';
+  elements.energyFrictionWork.textContent = calculation
+    ? `${formatNumber(calculation.frictionWork)} energy-units`
+    : '—';
+  elements.energyNetWork.textContent = calculation
+    ? `${formatNumber(calculation.netWork)} energy-units`
+    : '—';
+  elements.energyDelta.textContent = calculation
+    ? `${formatNumber(calculation.deltaKineticEnergy)} energy-units`
+    : '—';
+  elements.energyResidual.textContent = calculation
+    ? formatNumber(calculation.workEnergyResidual)
+    : '—';
+  elements.energyTheorem.textContent = calculation?.withinTolerance
+    ? 'Net Work ≈ Change in Kinetic Energy'
+    : 'Run a force-driven segment to compare net work and ΔKE.';
+  elements.energyTheorem.dataset.consistent = String(calculation?.withinTolerance ?? false);
+  elements.energyExplanation.textContent = workEnergyExplanation(calculation);
+  elements.energyRunApplied.textContent = `${formatNumber(summary.totalAppliedWork)} energy-units`;
+  elements.energyRunFriction.textContent = `${formatNumber(summary.totalFrictionWork)} energy-units`;
+  elements.energyRunNet.textContent = `${formatNumber(summary.totalNetWork)} energy-units`;
+  elements.energyRunDelta.textContent = `${formatNumber(summary.runDeltaKE)} energy-units`;
+
+  const bars = energyVisualizationModel(energy);
+  renderEnergyBar(elements.energyBarInitial, bars.initialKineticEnergy);
+  renderEnergyBar(elements.energyBarFinal, bars.finalKineticEnergy);
+  renderEnergyBar(elements.energyBarApplied, bars.appliedWork);
+  renderEnergyBar(elements.energyBarFriction, bars.frictionWork);
+}
+
+function renderEnergyBar(element, model) {
+  element.style.width = model.width;
+  element.dataset.sign = model.sign;
+  element.textContent = formatNumber(model.value);
 }
 
 function renderFriction(friction, mass) {
@@ -385,6 +462,13 @@ elements.runProgram.addEventListener('click', async () => {
           ? `Surface set · ${getSurface(step.surfaceId).label}`
           : `Friction · applied ${formatNumber(step.calculation.appliedForce)} + friction ${formatNumber(step.calculation.frictionForce)} = net ${formatNumber(step.calculation.netForce)}`;
         showProgramMessage(message, false);
+      },
+      onEnergy(state, step) {
+        render(state);
+        showProgramMessage(
+          `Work–energy · net work ${formatNumber(step.calculation.netWork)} ≈ ΔKE ${formatNumber(step.calculation.deltaKineticEnergy)}`,
+          false,
+        );
       },
     });
     render(result.state);

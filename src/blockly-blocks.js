@@ -1,4 +1,4 @@
-import { BLOCK_TYPES } from './blockly-program.js?v=m11-friction-contract';
+import { BLOCK_TYPES } from './blockly-program.js?v=m12-work-energy-contract';
 
 export const ROBOT_TOOLBOX = Object.freeze({
   kind: 'flyoutToolbox',
@@ -47,7 +47,7 @@ export const ACCEPTANCE_PROGRAM = Object.freeze({
             next: {
               block: {
                 type: BLOCK_TYPES.SET_SURFACE,
-                fields: { SURFACE: 'rough' },
+                fields: { SURFACE: 'normal' },
                 next: {
                   block: {
                     type: BLOCK_TYPES.SET_MASS,
@@ -59,7 +59,7 @@ export const ACCEPTANCE_PROGRAM = Object.freeze({
                         next: {
                           block: {
                             type: BLOCK_TYPES.APPLY_FORCE_FOR_TIME,
-                            fields: { DURATION: 6 },
+                            fields: { DURATION: 5 },
                           },
                         },
                       },

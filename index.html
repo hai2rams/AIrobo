@@ -19,7 +19,7 @@
     <main class="app-shell">
       <header class="app-header">
         <div>
-          <p class="eyebrow">M11 · Friction and realistic motion</p>
+          <p class="eyebrow">M12 · Work and energy</p>
           <h1>Visual Playground</h1>
           <p class="subtitle">Guide one robot through a deterministic 2D world.</p>
         </div>
@@ -30,11 +30,11 @@
         <div class="panel-heading">
           <div>
             <p class="panel-kicker">Active mission</p>
-            <h2 id="mission-title">Move Across a Rough Surface</h2>
+            <h2 id="mission-title">Give the Robot Enough Energy</h2>
           </div>
           <span id="mission-status" class="mission-status">Ready</span>
         </div>
-        <p id="mission-description" class="mission-description">Choose enough force to overcome friction and reach the target.</p>
+        <p id="mission-description" class="mission-description">Use force and motion to reach the target while observing work and kinetic energy.</p>
         <dl class="mission-metrics" aria-live="polite">
           <div><dt>Distance</dt><dd id="mission-distance">200</dd></div>
           <div><dt>Attempts</dt><dd id="mission-attempts">0</dd></div>
@@ -120,7 +120,7 @@
           <div class="panel-heading">
             <div>
               <p class="panel-kicker">Motion fundamentals</p>
-              <h2 id="physics-title">Physics — Friction</h2>
+              <h2 id="physics-title">Physics — Work &amp; Energy</h2>
             </div>
           </div>
           <dl class="physics-grid" aria-live="polite">
@@ -194,6 +194,29 @@
               <p id="comparison-rough">Rough surface comparison appears after force is set.</p>
             </div>
           </div>
+          <div class="energy-section" aria-live="polite">
+            <h3>Work-energy theorem</h3>
+            <dl class="vector-grid energy-grid">
+              <div><dt>Current KE</dt><dd id="energy-current">0 energy-units</dd></div>
+              <div><dt>Initial KE</dt><dd id="energy-initial">—</dd></div>
+              <div><dt>Final KE</dt><dd id="energy-final">—</dd></div>
+              <div><dt>Displacement</dt><dd id="energy-displacement">—</dd></div>
+              <div><dt>Applied work</dt><dd id="energy-applied-work">—</dd></div>
+              <div><dt>Friction work</dt><dd id="energy-friction-work">—</dd></div>
+              <div><dt>Net work</dt><dd id="energy-net-work">—</dd></div>
+              <div><dt>ΔKE</dt><dd id="energy-delta">—</dd></div>
+              <div><dt>Residual</dt><dd id="energy-residual">—</dd></div>
+            </dl>
+            <p id="energy-theorem" class="energy-theorem">Run a force-driven segment to compare net work and ΔKE.</p>
+            <p id="energy-explanation" class="physics-explanation">No displacement occurred, so no mechanical work was done.</p>
+            <h3>Run totals</h3>
+            <dl class="vector-grid energy-grid">
+              <div><dt>Applied work</dt><dd id="energy-run-applied">0 energy-units</dd></div>
+              <div><dt>Friction work</dt><dd id="energy-run-friction">0 energy-units</dd></div>
+              <div><dt>Net work</dt><dd id="energy-run-net">0 energy-units</dd></div>
+              <div><dt>Overall ΔKE</dt><dd id="energy-run-delta">0 energy-units</dd></div>
+            </dl>
+          </div>
         </section>
 
         <section class="panel event-panel" aria-labelledby="events-title">
@@ -232,9 +255,24 @@
           </svg>
         </figure>
       </section>
+
+      <section class="panel energy-visualization" aria-labelledby="energy-visualization-title">
+        <div class="panel-heading">
+          <div>
+            <p class="panel-kicker">Structured M12 data</p>
+            <h2 id="energy-visualization-title">Energy and work comparison</h2>
+          </div>
+        </div>
+        <div class="energy-bars">
+          <div class="energy-bar-row"><span>Initial KE</span><div class="energy-bar-track"><span id="energy-bar-initial" class="energy-bar"></span></div></div>
+          <div class="energy-bar-row"><span>Final KE</span><div class="energy-bar-track"><span id="energy-bar-final" class="energy-bar final"></span></div></div>
+          <div class="energy-bar-row"><span>Applied work</span><div class="energy-bar-track"><span id="energy-bar-applied" class="energy-bar applied"></span></div></div>
+          <div class="energy-bar-row"><span>Friction work</span><div class="energy-bar-track"><span id="energy-bar-friction" class="energy-bar friction"></span></div></div>
+        </div>
+      </section>
     </main>
 
     <script src="./node_modules/blockly/blockly.min.js"></script>
-    <script type="module" src="./src/main.js?v=m11-friction-contract"></script>
+    <script type="module" src="./src/main.js?v=m12-work-energy-contract"></script>
   </body>
 </html>
